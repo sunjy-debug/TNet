@@ -15,7 +15,7 @@ class GCN(nn.Module):
 
     def forward(self, x, adj):
         num = adj.shape[0]
-        diag = torch.diag(torch.cuda.FloatTensor([1 for _ in range(num)]))
+        diag = torch.eye(num, device=adj.device, dtype=x.dtype)
         x = F.relu(self.gc1(x, adj+diag))
         x = F.dropout(x, self.dropout)
         return x
