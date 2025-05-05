@@ -144,7 +144,11 @@ class Experiment():
 
     def get_peheLoss(self, y1pred, y0pred, y1gt, y0gt):
         pred = y1pred - y0pred
-        gt = y1gt - y0gt 
+        gt = y1gt - y0gt
+        print("  y1pred[:1]:", y1pred[:1].tolist())
+        print("  y0pred[:1]:", y0pred[:1].tolist())
+        print("  y1gt  [:1]:", y1gt[:1].tolist())
+        print("  y0gt  [:1]:", y0gt[:1].tolist())
         if y1gt.numel() == 0 or y0gt.numel() == 0:
             return torch.tensor(-100, device=pred.device)
         return torch.sqrt(self.peheLoss(pred, gt))
@@ -152,6 +156,8 @@ class Experiment():
     def get_ateLoss(self, y1pred, y0pred, y1gt, y0gt):
         pred = y1pred - y0pred
         gt = y1gt - y0gt
+        print("  y1pred[:1] - y0pred[:1]:", (y1pred[:1] - y0pred[:1]).tolist())
+        print("  y1gt  [:1] - y0gt  [:1]:",   (y1gt[:1] - y0gt[:1]).tolist())
         if y1gt.numel() == 0 or y0gt.numel() == 0:
             return torch.tensor(-100, device=pred.device) 
         return torch.abs(torch.mean(pred) - torch.mean(gt))
