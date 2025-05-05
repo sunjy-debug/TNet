@@ -51,7 +51,8 @@ class Experiment():
         print("================================Model================================")
         print(self.model)
 
-        self.Tensor = torch.cuda.FloatTensor if self.args.cuda else torch.FloatTensor
+        # self.Tensor = torch.cuda.FloatTensor if self.args.cuda else torch.FloatTensor
+        self.device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
         self.trainA = trainA
         self.trainX = trainX
         self.trainT = trainT
@@ -77,23 +78,23 @@ class Experiment():
 
         self.z_1 = 0.7
         self.z_2 = 0.2
-        self.train_t1z1 = self.Tensor(train_t1z1)
-        self.train_t1z0 = self.Tensor(train_t1z0)
-        self.train_t0z0 = self.Tensor(train_t0z0)
-        self.train_t0z7 = self.Tensor(train_t0z1)
-        self.train_t0z2 = self.Tensor(train_t0z2)
+        self.train_t1z1 = torch.tensor(train_t1z1, dtype=torch.long, device=self.device)
+        self.train_t1z0 = torch.tensor(train_t1z0, dtype=torch.long, device=self.device)
+        self.train_t0z0 = torch.tensor(train_t0z0, dtype=torch.long, device=self.device)
+        self.train_t0z1 = torch.tensor(train_t0z1, dtype=torch.long, device=self.device)
+        self.train_t0z2 = torch.tensor(train_t0z2, dtype=torch.long, device=self.device)
 
-        self.val_t1z1 = self.Tensor(val_t1z1)
-        self.val_t1z0 = self.Tensor(val_t1z0)
-        self.val_t0z0 = self.Tensor(val_t0z0)
-        self.val_t0z7 = self.Tensor(val_t0z1)
-        self.val_t0z2 = self.Tensor(val_t0z2)
+        self.val_t1z1 = torch.tensor(val_t1z1, dtype=torch.long, device=self.device)
+        self.val_t1z0 = torch.tensor(val_t1z0, dtype=torch.long, device=self.device)
+        self.val_t0z0 = torch.tensor(val_t0z0, dtype=torch.long, device=self.device)
+        self.val_t0z1 = torch.tensor(val_t0z1, dtype=torch.long, device=self.device)
+        self.val_t0z2 = torch.tensor(val_t0z2, dtype=torch.long, device=self.device)
 
-        self.test_t1z1 = self.Tensor(test_t1z1)
-        self.test_t1z0 = self.Tensor(test_t1z0)
-        self.test_t0z0 = self.Tensor(test_t0z0)
-        self.test_t0z7 = self.Tensor(test_t0z1)
-        self.test_t0z2 = self.Tensor(test_t0z2)
+        self.test_t1z1 = torch.tensor(test_t1z1, dtype=torch.long, device=self.device)
+        self.test_t1z0 = torch.tensor(test_t1z0, dtype=torch.long, device=self.device)
+        self.test_t0z0 = torch.tensor(test_t0z0, dtype=torch.long, device=self.device)
+        self.test_t0z1 = torch.tensor(test_t0z1, dtype=torch.long, device=self.device)
+        self.test_t0z2 = torch.tensor(test_t0z2, dtype=torch.long, device=self.device)
 
         """PO normalization if any"""
         self.YFTrain, self.YCFTrain = utils.PO_normalize(self.args.normy, self.POTrain, self.POTrain, self.cfPOTrain)
@@ -106,9 +107,9 @@ class Experiment():
         self.bce_loss = nn.BCELoss(reduction='mean')
         self.peheLoss = nn.MSELoss(reduction='mean')
 
-        self.alpha = self.Tensor([self.args.alpha])
-        self.gamma = self.Tensor([self.args.gamma])
-        self.alpha_base = self.Tensor([self.args.alpha_base])
+        self.alpha = torch.tensor([self.args.alpha], dtype=torch.long, device=self.device)
+        self.gamma = torch.tensor([self.args.gamma], dtype=torch.long, device=self.device)
+        self.alpha_base = torch.tensor([self.args.alpha_base], dtype=torch.long, device=self.device)
         if self.args.cuda:
             torch.cuda.manual_seed(self.args.seed)
             self.loss = self.loss.cuda()
@@ -167,7 +168,7 @@ class Experiment():
         discLoss = self.bce_loss(pred_treatmentTrain.reshape(-1), T)
         num = pred_treatmentTrain.shape[0]
         target05 = [0.5 for _ in range(num)]
-        discLosshalf = self.loss(pred_treatmentTrain.reshape(-1), self.Tensor(target05))
+        discLosshalf = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
         discLoss.backward()
         self.optimizerD.step()
 
@@ -180,7 +181,7 @@ class Experiment():
         discLossWatch = self.bce_loss(pred_treatment.reshape(-1), T)
         num = pred_treatment.shape[0]
         target05 = [0.5 for _ in range(num)]
-        discLosshalf = self.loss(pred_treatment.reshape(-1), self.Tensor(target05))
+        discLosshalf = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
 
         return discLossWatch, discLosshalf, pred_treatment, T
 
@@ -250,14 +251,15 @@ class Experiment():
             = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
                                        self.train_t0z7, self.train_t0z2, self.train_t0z0)
 
-        # individual_effect_val, peer_effect_val, total_effect_val,\
-        #     ate_individual_val, ate_peer_val, ate_total_val\
-        #     = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
-        #                                self.val_t0z7, self.val_t0z2, self.val_t0z0)
+        individual_effect_val, peer_effect_val, total_effect_val,\
+            ate_individual_val, ate_peer_val, ate_total_val\
+             = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
+        
         individual_effect_te, peer_effect_te, total_effect_te, \
             ate_individual_te, ate_peer_te, ate_total_te \
             = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z7, self.test_t0z2, self.test_t0z0)
+                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             print('2_Epoch: {:04d}'.format(epoch + 1),
@@ -302,8 +304,8 @@ class Experiment():
         _, pred_zTrain, _, _, labelZ = self.model(A, X, T)
         discLoss_z = self.d_zLoss(pred_zTrain.reshape(-1), labelZ)
         num = pred_zTrain.shape[0]
-        target = self.Tensor(np.random.uniform(low=0.0, high=1.0, size=num))
-        discLosshalf_z = self.loss(pred_zTrain.reshape(-1), self.Tensor(target))
+        target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+        discLosshalf_z = self.loss(pred_zTrain.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
         discLoss_z.backward()
         self.optimizerD_z.step()
 
@@ -315,8 +317,8 @@ class Experiment():
         _, pred_z, _, _, labelZ = self.model(A, X, T)
         discLossWatch = self.d_zLoss(pred_z.reshape(-1), labelZ)
         num = pred_z.shape[0]
-        target = self.Tensor(np.random.uniform(low=0.0, high=1.0, size=num))
-        discLosshalf = self.loss(pred_z.reshape(-1), self.Tensor(target))
+        target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+        discLosshalf = self.loss(pred_z.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
 
         return discLossWatch, discLosshalf, pred_z, labelZ
 
@@ -357,7 +359,7 @@ class Experiment():
             target05 = [0.5 for _ in range(num)]
             dLoss = self.loss(pred_treatmentTrain.reshape(-1), self.Tensor(target05))
             num = pred_zTrain.shape[0]
-            target = self.Tensor(np.random.uniform(low=0.0, high=1.0, size=num))
+            target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
             d_zLoss = self.d_zLoss(pred_zTrain.reshape(-1), target)
             loss_train = pLoss + dLoss * self.alpha + d_zLoss * self.gamma
             loss_train.backward()
@@ -391,12 +393,12 @@ class Experiment():
             pLoss = self.loss(pred_outcomeTrain.reshape(-1), Y)
             if self.args.model in set(["TARNet", "TARNet_INTERFERENCE"]):
                 loss_train = pLoss
-                dLoss = self.Tensor([0])
+                dLoss = torch.tensor([0], dtype=torch.long, device=self.device)
             else:
                 rep_t1, rep_t0 = rep[(T > 0).nonzero()], rep[(T < 1).nonzero()]
                 dLoss, _ = utils.wasserstein(rep_t1, rep_t0, cuda=self.args.cuda)
                 loss_train = pLoss + self.alpha_base * dLoss
-            d_zLoss = self.Tensor([-1])
+            d_zLoss = torch.tensor([-1], dtype=torch.long, device=self.device)
             loss_train.backward()
             self.optimizerB.step()
 
@@ -412,7 +414,7 @@ class Experiment():
             target05 = [0.5 for _ in range(num)]
             dLossV = self.loss(pred_treatment.reshape(-1), self.Tensor(target05))
             num = pred_z.shape[0]
-            target = self.Tensor(np.random.uniform(low=0.0, high=1.0, size=num))
+            target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
             d_zLossV = self.d_zLoss(pred_z.reshape(-1), target)
             loss_val = pLossV + dLossV * self.alpha + d_zLossV * self.gamma
 
@@ -432,25 +434,25 @@ class Experiment():
             pLossV = self.loss(pred_outcome.reshape(-1), Y)
             if self.args.model in set(["TARNet", "TARNet_INTERFERENCE"]):
                 loss_val = pLossV
-                dLossV = self.Tensor([0])
+                dLossV = torch.tensor([0], dtype=torch.long, device=self.device)
             else:
                 rep_t1, rep_t0 = rep[(T > 0).nonzero()], rep[(T < 1).nonzero()]
                 dLossV, _ = utils.wasserstein(rep_t1, rep_t0, cuda=self.args.cuda)
                 loss_val = self.args.alpha_base * dLossV
                 loss_val = pLossV + self.args.alpha_base * dLossV
-            d_zLossV = self.Tensor([-1])
+            d_zLossV = torch.tensor([-1], dtype=torch.long, device=self.device)
 
         return loss_val, pLossV, dLossV, d_zLossV
 
     def compute_effect_pehe(self, A, X, gt_t1z1, gt_t1z0, gt_t0z7, gt_t0z2, gt_t0z0):
 
         num = X.shape[0]
-        z_1s = self.Tensor(np.ones(num))
-        z_0s = self.Tensor(np.zeros(num))
-        z_07s = self.Tensor(np.zeros(num) + self.z_1)
-        z_02s = self.Tensor(np.zeros(num) + self.z_2)
-        t_1s = self.Tensor(np.ones(num))
-        t_0s = self.Tensor(np.zeros(num))
+        z_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
+        z_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
+        z_07s = torch.tensor(np.zeros(num) + self.z_1, dtype=torch.long, device=self.device)
+        z_02s = torch.tensor(np.zeros(num) + self.z_2, dtype=torch.long, device=self.device)
+        t_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
+        t_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
 
         if self.args.model == 'TargetedModel_DoubleBSpline':
             pred_outcome_t1z1 = self.model.infer_potential_outcome(A, X, t_1s, z_1s)
@@ -516,7 +518,7 @@ class Experiment():
         individual_effect_te, peer_effect_te, total_effect_te,\
             ate_individual_te, ate_peer_te, ate_total_te\
             = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z7, self.test_t0z2, self.test_t0z0)
+                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             print('p_Epoch: {:04d}'.format(epoch + 1),
@@ -614,15 +616,15 @@ class Experiment():
         individual_effect_train, peer_effect_train, total_effect_train, \
                 ate_individual_train, ate_peer_train, ate_total_train \
                 = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                           self.train_t0z7, self.train_t0z2, self.train_t0z0)
+                                           self.train_t0z1, self.train_t0z2, self.train_t0z0)
         individual_effect_val, peer_effect_val, total_effect_val, \
             ate_individual_val, ate_peer_val, ate_total_val \
             = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
-                                        self.val_t0z7, self.val_t0z2, self.val_t0z0)
+                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
         individual_effect_test, peer_effect_test, total_effect_test, \
             ate_individual_test, ate_peer_test, ate_total_test \
             = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z7, self.test_t0z2, self.test_t0z0)
+                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         print(
               # 'F_train:{:.4f}'.format(factualLossTrain.item()),
