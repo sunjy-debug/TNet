@@ -143,13 +143,15 @@ class Experiment():
         self.labelT = []
 
     def get_peheLoss(self, y1pred, y0pred, y1gt, y0gt):
-        pred = y1pred - y0pred
-        gt = y1gt - y0gt
-        if gt.numel() == 0:
+        if y1gt.numel() == 0 or y0gt.numel() == 0:
             return torch.tensor(0.0, device=pred.device)
+        pred = y1pred - y0pred
+        gt = y1gt - y0gt  
         return torch.sqrt(self.peheLoss(pred, gt))
 
     def get_ateLoss(self, y1pred, y0pred, y1gt, y0gt):
+        if y1gt.numel() == 0 or y0gt.numel() == 0:
+            return torch.tensor(0.0, device=y1pred.device)
         pred = y1pred - y0pred
         gt = y1gt - y0gt
         return torch.abs(torch.mean(pred) - torch.mean(gt))
@@ -246,20 +248,50 @@ class Experiment():
             ) * self.args.beta
 
 
-        individual_effect_train, peer_effect_train, total_effect_train, \
-            ate_individual_train, ate_peer_train, ate_total_train \
-            = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                       self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        # individual_effect_train, peer_effect_train, total_effect_train, \
+        #     ate_individual_train, ate_peer_train, ate_total_train \
+        #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
+        #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        idxs = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
+            ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_train, peer_effect_train, total_effect_train, \
+              ate_individual_train, ate_peer_train, ate_total_train \
+              = self.compute_effect_pehe(self.trainA, self.trainX,
+                                        self.train_t1z1, self.train_t1z0,
+                                        self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
-        individual_effect_val, peer_effect_val, total_effect_val,\
-            ate_individual_val, ate_peer_val, ate_total_val\
-             = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+        # individual_effect_val, peer_effect_val, total_effect_val,\
+        #     ate_individual_val, ate_peer_val, ate_total_val\
+        #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+        #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
+        idxs = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
+            ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_val, peer_effect_val, total_effect_val, \
+              ate_individual_val, ate_peer_val, ate_total_val \
+              = self.compute_effect_pehe(self.valA, self.valX,
+                                        self.val_t1z1, self.val_t1z0,
                                         self.val_t0z1, self.val_t0z2, self.val_t0z0)
         
-        individual_effect_te, peer_effect_te, total_effect_te, \
-            ate_individual_te, ate_peer_te, ate_total_te \
-            = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        # individual_effect_te, peer_effect_te, total_effect_te, \
+        #     ate_individual_te, ate_peer_te, ate_total_te \
+        #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
+        #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        idxs = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
+            ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_te, peer_effect_te, total_effect_te, \
+              ate_individual_te, ate_peer_te, ate_total_te \
+              = self.compute_effect_pehe(self.testA, self.testX,
+                                        self.test_t1z1, self.test_t1z0,
+                                        self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             print('t_Epoch: {:04d}'.format(epoch + 1),
@@ -277,19 +309,18 @@ class Experiment():
                   # 'CFd_zLossTrain:{:.4f}'.format(cfD_zLoss_train.item()),
                   # 'CFd_zLossVal:{:.4f}'.format(cfD_zLoss_val.item()),
 
-                  'iE_train:{:.4f}'.format(individual_effect_train.item()),
+                  'IE_train:{:.4f}'.format(individual_effect_train.item()),
                   'PE_train:{:.4f}'.format(peer_effect_train.item()),
                   'TE_train:{:.4f}'.format(total_effect_train.item()),
 
-                  '\t',
-                  'iE_te:{:.4f}'.format(individual_effect_te.item()),
+                  'IE_te:{:.4f}'.format(individual_effect_te.item()),
                   'PE_te:{:.4f}'.format(peer_effect_te.item()),
                   'TE_te:{:.4f}'.format(total_effect_te.item()),
                   #
                   # 'AiE_train:{:.4f}'.format(ate_individual_train.item()),
                   # 'APE_train:{:.4f}'.format(ate_peer_train.item()),
                   # 'ATE_train:{:.4f}'.format(ate_total_train.item()),
-                  'AiE_te:{:.4f}'.format(ate_individual_te.item()),
+                  'AIE_te:{:.4f}'.format(ate_individual_te.item()),
                   'APE_te:{:.4f}'.format(ate_peer_te.item()),
                   'ATE_te:{:.4f}'.format(ate_total_te.item()),
 
@@ -522,19 +553,50 @@ class Experiment():
             # self.lossCFVal.append(cfloss_val.cpu().detach().numpy())
 
 
-        individual_effect_train, peer_effect_train, total_effect_train,\
-            ate_individual_train, ate_peer_train, ate_total_train\
-            = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                       self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        # individual_effect_train, peer_effect_train, total_effect_train, \
+        #     ate_individual_train, ate_peer_train, ate_total_train \
+        #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
+        #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        idxs = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
+            ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_train, peer_effect_train, total_effect_train, \
+              ate_individual_train, ate_peer_train, ate_total_train \
+              = self.compute_effect_pehe(self.trainA, self.trainX,
+                                        self.train_t1z1, self.train_t1z0,
+                                        self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
         # individual_effect_val, peer_effect_val, total_effect_val,\
         #     ate_individual_val, ate_peer_val, ate_total_val\
-        #     = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
-        #                                self.val_t0z7, self.val_t0z2, self.val_t0z0)
-        individual_effect_te, peer_effect_te, total_effect_te,\
-            ate_individual_te, ate_peer_te, ate_total_te\
-            = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+        #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
+        idxs = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
+            ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_val, peer_effect_val, total_effect_val, \
+              ate_individual_val, ate_peer_val, ate_total_val \
+              = self.compute_effect_pehe(self.valA, self.valX,
+                                        self.val_t1z1, self.val_t1z0,
+                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
+        
+        # individual_effect_te, peer_effect_te, total_effect_te, \
+        #     ate_individual_te, ate_peer_te, ate_total_te \
+        #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
+        #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        idxs = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        if any(idx.numel() == 0 for idx in idxs):
+            individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
+            ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
+        else:
+            individual_effect_te, peer_effect_te, total_effect_te, \
+              ate_individual_te, ate_peer_te, ate_total_te \
+              = self.compute_effect_pehe(self.testA, self.testX,
+                                        self.test_t1z1, self.test_t1z0,
+                                        self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             print('p_Epoch: {:04d}'.format(epoch + 1),
@@ -552,19 +614,18 @@ class Experiment():
                   # 'CFd_zLossTrain:{:.4f}'.format(cfD_zLoss_train.item()),
                   # 'CFd_zLossVal:{:.4f}'.format(cfD_zLoss_val.item()),
 
-                  'iE_train:{:.4f}'.format(individual_effect_train.item()),
+                  'IE_train:{:.4f}'.format(individual_effect_train.item()),
                   'PE_train:{:.4f}'.format(peer_effect_train.item()),
                   'TE_train:{:.4f}'.format(total_effect_train.item()),
 
-                  '\t',
-                  'iE_te:{:.4f}'.format(individual_effect_te.item()),
+                  'IE_te:{:.4f}'.format(individual_effect_te.item()),
                   'PE_te:{:.4f}'.format(peer_effect_te.item()),
                   'TE_te:{:.4f}'.format(total_effect_te.item()),
                   #
                   # 'AiE_train:{:.4f}'.format(ate_individual_train.item()),
                   # 'APE_train:{:.4f}'.format(ate_peer_train.item()),
                   # 'ATE_train:{:.4f}'.format(ate_total_train.item()),
-                  'AiE_te:{:.4f}'.format(ate_individual_te.item()),
+                  'AIE_te:{:.4f}'.format(ate_individual_te.item()),
                   'APE_te:{:.4f}'.format(ate_peer_te.item()),
                   'ATE_te:{:.4f}'.format(ate_total_te.item()),
 
