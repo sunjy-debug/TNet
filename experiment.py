@@ -301,7 +301,7 @@ class Experiment():
                 ("train_t0z2", self.train_t0z2),
                 ("train_t0z0", self.train_t0z0),
             ]
-            empty_idxs = [name for name, tensor in idxs_train.items() if tensor.numel() == 0]
+            empty_idxs = [name for name, tensor in idxs_train if tensor.numel() == 0]
             if empty_idxs:
                 print("Warning: The following training subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
             idxs_test = [
@@ -311,7 +311,7 @@ class Experiment():
                 ("test_t0z2", self.test_t0z2),
                 ("test_t0z0", self.test_t0z0),
             ]
-            empty_idxs = [name for name, tensor in idxs_test.items() if tensor.numel() == 0]
+            empty_idxs = [name for name, tensor in idxs_test if tensor.numel() == 0]
             if empty_idxs:
                 print("Warning: The following test subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
             
@@ -611,7 +611,7 @@ class Experiment():
                 ("train_t0z2", self.train_t0z2),
                 ("train_t0z0", self.train_t0z0),
             ]
-            empty_idxs = [name for name, tensor in idxs_train.items() if tensor.numel() == 0]
+            empty_idxs = [name for name, tensor in idxs_train if tensor.numel() == 0]
             if empty_idxs:
                 print("Warning: The following training subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
             idxs_test = [
@@ -621,7 +621,7 @@ class Experiment():
                 ("test_t0z2", self.test_t0z2),
                 ("test_t0z0", self.test_t0z0),
             ]
-            empty_idxs = [name for name, tensor in idxs_test.items() if tensor.numel() == 0]
+            empty_idxs = [name for name, tensor in idxs_test if tensor.numel() == 0]
             if empty_idxs:
                 print("Warning: The following test subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
 
