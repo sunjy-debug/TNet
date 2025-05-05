@@ -249,7 +249,7 @@ class Experiment():
         individual_effect_train, peer_effect_train, total_effect_train, \
             ate_individual_train, ate_peer_train, ate_total_train \
             = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                       self.train_t0z7, self.train_t0z2, self.train_t0z0)
+                                       self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
         individual_effect_val, peer_effect_val, total_effect_val,\
             ate_individual_val, ate_peer_val, ate_total_val\
