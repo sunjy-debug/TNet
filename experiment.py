@@ -252,8 +252,8 @@ class Experiment():
         #     ate_individual_train, ate_peer_train, ate_total_train \
         #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
         #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
-        idxs = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_train):
             individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
             ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
         else:
@@ -267,8 +267,8 @@ class Experiment():
         #     ate_individual_val, ate_peer_val, ate_total_val\
         #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
         #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
-        idxs = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_val):
             individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
             ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
         else:
@@ -282,8 +282,8 @@ class Experiment():
         #     ate_individual_te, ate_peer_te, ate_total_te \
         #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
         #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
-        idxs = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_test):
             individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
             ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
         else:
@@ -294,6 +294,13 @@ class Experiment():
                                         self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
+            empty_idxs = [name for name, tensor in idxs_train.items() if tensor.numel() == 0]
+            if empty_idxs:
+                print("Warning: The following training subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
+            empty_idxs = [name for name, tensor in idxs_test.items() if tensor.numel() == 0]
+            if empty_idxs:
+                print("Warning: The following test subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
+            
             print('t_Epoch: {:04d}'.format(epoch + 1),
                   'tLossTrain:{:.4f}'.format(loss_train.item()),
                   'tLossVal:{:.4f}'.format(pLoss_val.item()),
@@ -541,8 +548,8 @@ class Experiment():
         #     ate_individual_train, ate_peer_train, ate_total_train \
         #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
         #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
-        idxs = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_train):
             individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
             ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
         else:
@@ -556,8 +563,8 @@ class Experiment():
         #     ate_individual_val, ate_peer_val, ate_total_val\
         #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
         #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
-        idxs = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_val):
             individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
             ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
         else:
@@ -571,8 +578,8 @@ class Experiment():
         #     ate_individual_te, ate_peer_te, ate_total_te \
         #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
         #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
-        idxs = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
-        if any(idx.numel() == 0 for idx in idxs):
+        idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        if any(idx.numel() == 0 for idx in idxs_test):
             individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
             ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
         else:
@@ -583,6 +590,13 @@ class Experiment():
                                         self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
+            empty_idxs = [name for name, tensor in idxs_train.items() if tensor.numel() == 0]
+            if empty_idxs:
+                print("Warning: The following training subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
+            empty_idxs = [name for name, tensor in idxs_test.items() if tensor.numel() == 0]
+            if empty_idxs:
+                print("Warning: The following test subsets are empty:\n" + "\n".join(f" - {k}" for k in empty_idxs))
+                
             print('p_Epoch: {:04d}'.format(epoch + 1),
                   'pLossTrain:{:.4f}'.format(pLoss_train.item()),
                   'pLossVal:{:.4f}'.format(pLoss_val.item()),
