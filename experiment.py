@@ -444,44 +444,60 @@ class Experiment():
 
         return loss_val, pLossV, dLossV, d_zLossV
 
-    def compute_effect_pehe(self, A, X, gt_t1z1, gt_t1z0, gt_t0z1, gt_t0z2, gt_t0z0):
-
+    def compute_effect_pehe(self, A, X, idx_t1z1, idx_t1z0, idx_t0z1, idx_t0z2, idx_t0z0):
         num = X.shape[0]
-        z_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
-        z_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
-        z_01s = torch.tensor(np.zeros(num) + self.z_1, dtype=torch.long, device=self.device)
-        z_02s = torch.tensor(np.zeros(num) + self.z_2, dtype=torch.long, device=self.device)
-        t_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
-        t_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
+        t1 = torch.ones(num, device=self.device, dtype=torch.long)
+        t0 = torch.zeros(num, device=self.device, dtype=torch.long)
+        z1 = torch.full((num,), self.z_1, device=self.device, dtype=torch.long)
+        z2 = torch.full((num,), self.z_2, device=self.device, dtype=torch.long)
+        z0 = torch.zeros(num, device=self.device, dtype=torch.long)
 
         if self.args.model == 'TargetedModel_DoubleBSpline':
-            pred_outcome_t1z1 = self.model.infer_potential_outcome(A, X, t_1s, z_1s)
-            pred_outcome_t1z0 = self.model.infer_potential_outcome(A, X, t_1s, z_0s)
-            pred_outcome_t0z0 = self.model.infer_potential_outcome(A, X, t_0s, z_0s)
-            pred_outcome_t0z1 = self.model.infer_potential_outcome(A, X, t_0s, z_01s)
-            pred_outcome_t0z2 = self.model.infer_potential_outcome(A, X, t_0s, z_02s)
+            po11 = self.model.infer_potential_outcome(A, X, t1, z1)
+            po10 = self.model.infer_potential_outcome(A, X, t1, z0)
+            po00 = self.model.infer_potential_outcome(A, X, t0, z0)
+            po01 = self.model.infer_potential_outcome(A, X, t0, z1)
+            po02 = self.model.infer_potential_outcome(A, X, t0, z2)
         else:
-            _, _, pred_outcome_t1z1, _, _ = self.model(A, X, t_1s, z_1s)
-            _, _, pred_outcome_t1z0, _, _ = self.model(A, X, t_1s, z_0s)
-            _, _, pred_outcome_t0z0, _, _ = self.model(A, X, t_0s, z_0s)
-            _, _, pred_outcome_t0z1, _, _ = self.model(A, X, t_0s, z_01s)
-            _, _, pred_outcome_t0z2, _, _ = self.model(A, X, t_0s, z_02s)
+            _, _, po11, _, _ = self.model(A, X, t1, z1)
+            _, _, po10, _, _ = self.model(A, X, t1, z0)
+            _, _, po00, _, _ = self.model(A, X, t0, z0)
+            _, _, po01, _, _ = self.model(A, X, t0, z1)
+            _, _, po02, _, _ = self.model(A, X, t0, z2)
 
-        pred_outcome_t1z1 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t1z1)
-        pred_outcome_t1z0 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t1z0)
-        pred_outcome_t0z0 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z0)
-        pred_outcome_t0z1 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z1)
-        pred_outcome_t0z2 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z2)
+        po11 = utils.PO_normalize_recover(self.args.normy, self.POTrain, po11)
+        po10 = utils.PO_normalize_recover(self.args.normy, self.POTrain, po10)
+        po00 = utils.PO_normalize_recover(self.args.normy, self.POTrain, po00)
+        po01 = utils.PO_normalize_recover(self.args.normy, self.POTrain, po01)
+        po02 = utils.PO_normalize_recover(self.args.normy, self.POTrain, po02)
 
-        individual_effect = self.get_peheLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z1, gt_t0z2)
-        total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
+        p1 = po10[idx_t1z0]
+        p0 = po00[idx_t1z0]
+        y1 = self.POTrain[idx_t1z0]   # factual outcome when T=1
+        y0 = self.cfPOTrain[idx_t1z0] # counterfactual outcome when T=0
+        individual_effect = self.get_peheLoss(p1, p0, y1, y0)
 
-        ate_individual = self.get_ateLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z1, gt_t0z2)
-        ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
+        p1 = po01[idx_t0z1]
+        p0 = po02[idx_t0z1]
+        y1 = self.cfPOTrain[idx_t0z1]  # here both are counterfactual? adjust as needed
+        y0 = self.cfPOTrain[idx_t0z1]  # or use some other stored truth
+        peer_effect = self.get_peheLoss(p1, p0, y1, y0)
+
+        p1 = po11[idx_t1z1]
+        p0 = po00[idx_t1z1]
+        y1 = self.POTrain[idx_t1z1]
+        y0 = self.cfPOTrain[idx_t1z1]
+        total_effect = self.get_peheLoss(p1, p0, y1, y0)
+
+        ate_individual = self.get_ateLoss(po10[idx_t1z0], po00[idx_t1z0],
+                                     self.POTrain[idx_t1z0], self.cfPOTrain[idx_t1z0])
+        ate_peer       = self.get_ateLoss(po01[idx_t0z1], po02[idx_t0z1],
+                                     self.cfPOTrain[idx_t0z1], self.cfPOTrain[idx_t0z1])
+        ate_total      = self.get_ateLoss(po11[idx_t1z1], po00[idx_t1z1],
+                                     self.POTrain[idx_t1z1], self.cfPOTrain[idx_t1z1])
 
         return individual_effect, peer_effect, total_effect, ate_individual, ate_peer, ate_total
+
 
     def train_encoder_predictor(self, epoch):
 
