@@ -136,6 +136,14 @@ def make_split(A, X, Z, G, Y, idxs, cuda):
             to_tensor(cfPO, cuda),
         )
 def split_tz(T, G):
+        if isinstance(T, torch.Tensor):
+            T = T.detach().cpu().numpy()
+        else:
+            T = np.array(T)
+        if isinstance(G, torch.Tensor):
+            G = G.detach().cpu().numpy()
+        else:
+            G = np.array(G)
         return (
             np.where((T == 1) & (G == 1))[0],
             np.where((T == 1) & (G == 0))[0],
