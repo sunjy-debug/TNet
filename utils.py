@@ -179,6 +179,17 @@ def load_data(args):
         trainG = G[train_idx]
         valG   = G[val_idx]
         testG  = G[test_idx]
+
+        z1, z2 = 0.7, 0.2
+        def discretize(G):
+            G = np.zeros_like(G)
+            G[G >= z1] = z1
+            G[(G >= z2) & (G < z1)] = z2
+            return G
+        trainG = discretize(trainG)
+        valG   = discretize(valG)
+        testG  = discretize(testG)
+
         (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
         (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
         (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG)
@@ -225,34 +236,62 @@ def load_data_no_flip(args):
     if dataset == "Flickr":
         file = "./data/Flickr/simulation/" + str(dataset) + "_fliprate_" + str(flipRate) + "_expID_" + str(
             expID) + ".pkl"
+    if dataset == "Simulation":
+        A, X, Z, Y, G, _, _ = generate_simulation_data(args.n_nodes, args.edge_prob)
+        idx = np.arange(args.n_nodes)
+        np.random.shuffle(idx)
+        n1 = int(0.6 * args.n_nodes)
+        n2 = int(0.8 * args.n_nodes)
+        train_idx, val_idx, test_idx = idx[:n1], idx[n1:n2], idx[n2:]
+        (trainA, trainX, trainT, cfTrainT,POTrain,cfPOTrain) = make_split(A, X, Z, Y, G, train_idx, cuda)
+        (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, Y, G, val_idx, cuda)
+        (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, Y, G, test_idx, cuda)
 
-    with open(file, "rb") as f:
-        data = pkl.load(f)
-    dataTrain, dataVal, dataTest = data["train"], data["val"], data["test"]
+        trainG = G[train_idx]
+        valG   = G[val_idx]
+        testG  = G[test_idx]
 
-    Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        z1, z2 = 0.7, 0.2
+        def discretize(G):
+            G = np.zeros_like(G)
+            G[G >= z1] = z1
+            G[(G >= z2) & (G < z1)] = z2
+            return G
+        trainG = discretize(trainG)
+        valG   = discretize(valG)
+        testG  = discretize(testG)
 
-    trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain = dataTransform(dataTrain, cuda)
-    valA, valX, valT, cfValT, POVal, cfPOVal = dataTransform(dataVal, cuda)
-    testA, testX, testT, cfTestT, POTest, cfPOTest = dataTransform(dataTest, cuda)
+        (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
+        (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
+        (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG)
 
-    train_t1z1 = dataTrain["train_t1z1"]
-    train_t1z0 = dataTrain["train_t1z0"]
-    train_t0z0 = dataTrain["train_t0z0"]
-    train_t0z7 = dataTrain["train_t0z7"]
-    train_t0z2 = dataTrain["train_t0z2"]
-    val_t1z1 = dataVal["val_t1z1"]
-    val_t1z0 = dataVal["val_t1z0"]
-    val_t0z0 = dataVal["val_t0z0"]
-    val_t0z7 = dataVal["val_t0z7"]
-    val_t0z2 = dataVal["val_t0z2"]
-    test_t1z1 = dataTest["test_t1z1"]
-    test_t1z0 = dataTest["test_t1z0"]
-    test_t0z0 = dataTest["test_t0z0"]
-    test_t0z7 = dataTest["test_t0z7"]
-    test_t0z2 = dataTest["test_t0z2"]
+    # with open(file, "rb") as f:
+    #     data = pkl.load(f)
+    # dataTrain, dataVal, dataTest = data["train"], data["val"], data["test"]
 
-    return trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest, train_t1z1, train_t1z0, train_t0z0, train_t0z7, train_t0z2, val_t1z1, val_t1z0, val_t0z0, val_t0z7, val_t0z2, test_t1z1, test_t1z0, test_t0z0, test_t0z7, test_t0z2
+    # Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+
+    # trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain = dataTransform(dataTrain, cuda)
+    # valA, valX, valT, cfValT, POVal, cfPOVal = dataTransform(dataVal, cuda)
+    # testA, testX, testT, cfTestT, POTest, cfPOTest = dataTransform(dataTest, cuda)
+
+    # train_t1z1 = dataTrain["train_t1z1"]
+    # train_t1z0 = dataTrain["train_t1z0"]
+    # train_t0z0 = dataTrain["train_t0z0"]
+    # train_t0z7 = dataTrain["train_t0z7"]
+    # train_t0z2 = dataTrain["train_t0z2"]
+    # val_t1z1 = dataVal["val_t1z1"]
+    # val_t1z0 = dataVal["val_t1z0"]
+    # val_t0z0 = dataVal["val_t0z0"]
+    # val_t0z7 = dataVal["val_t0z7"]
+    # val_t0z2 = dataVal["val_t0z2"]
+    # test_t1z1 = dataTest["test_t1z1"]
+    # test_t1z0 = dataTest["test_t1z0"]
+    # test_t0z0 = dataTest["test_t0z0"]
+    # test_t0z7 = dataTest["test_t0z7"]
+    # test_t0z2 = dataTest["test_t0z2"]
+
+    return trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest, train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2, val_t1z1, val_t1z0, val_t0z0, val_t0z1, val_t0z2, test_t1z1, test_t1z0, test_t0z0, test_t0z1, test_t0z2
 
 
 def PO_normalize(normy,base,PO,cfPO):

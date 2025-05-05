@@ -444,12 +444,12 @@ class Experiment():
 
         return loss_val, pLossV, dLossV, d_zLossV
 
-    def compute_effect_pehe(self, A, X, gt_t1z1, gt_t1z0, gt_t0z7, gt_t0z2, gt_t0z0):
+    def compute_effect_pehe(self, A, X, gt_t1z1, gt_t1z0, gt_t0z1, gt_t0z2, gt_t0z0):
 
         num = X.shape[0]
         z_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
         z_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
-        z_07s = torch.tensor(np.zeros(num) + self.z_1, dtype=torch.long, device=self.device)
+        z_01s = torch.tensor(np.zeros(num) + self.z_1, dtype=torch.long, device=self.device)
         z_02s = torch.tensor(np.zeros(num) + self.z_2, dtype=torch.long, device=self.device)
         t_1s = torch.tensor(np.ones(num), dtype=torch.long, device=self.device)
         t_0s = torch.tensor(np.zeros(num), dtype=torch.long, device=self.device)
@@ -458,27 +458,27 @@ class Experiment():
             pred_outcome_t1z1 = self.model.infer_potential_outcome(A, X, t_1s, z_1s)
             pred_outcome_t1z0 = self.model.infer_potential_outcome(A, X, t_1s, z_0s)
             pred_outcome_t0z0 = self.model.infer_potential_outcome(A, X, t_0s, z_0s)
-            pred_outcome_t0z7 = self.model.infer_potential_outcome(A, X, t_0s, z_07s)
+            pred_outcome_t0z1 = self.model.infer_potential_outcome(A, X, t_0s, z_01s)
             pred_outcome_t0z2 = self.model.infer_potential_outcome(A, X, t_0s, z_02s)
         else:
             _, _, pred_outcome_t1z1, _, _ = self.model(A, X, t_1s, z_1s)
             _, _, pred_outcome_t1z0, _, _ = self.model(A, X, t_1s, z_0s)
             _, _, pred_outcome_t0z0, _, _ = self.model(A, X, t_0s, z_0s)
-            _, _, pred_outcome_t0z7, _, _ = self.model(A, X, t_0s, z_07s)
+            _, _, pred_outcome_t0z1, _, _ = self.model(A, X, t_0s, z_01s)
             _, _, pred_outcome_t0z2, _, _ = self.model(A, X, t_0s, z_02s)
 
         pred_outcome_t1z1 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t1z1)
         pred_outcome_t1z0 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t1z0)
         pred_outcome_t0z0 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z0)
-        pred_outcome_t0z7 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z7)
+        pred_outcome_t0z1 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z1)
         pred_outcome_t0z2 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z2)
 
         individual_effect = self.get_peheLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        peer_effect = self.get_peheLoss(pred_outcome_t0z7, pred_outcome_t0z2, gt_t0z7, gt_t0z2)
+        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z1, gt_t0z2)
         total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
 
         ate_individual = self.get_ateLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        ate_peer = self.get_ateLoss(pred_outcome_t0z7, pred_outcome_t0z2, gt_t0z7, gt_t0z2)
+        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z1, gt_t0z2)
         ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
 
         return individual_effect, peer_effect, total_effect, ate_individual, ate_peer, ate_total
@@ -509,7 +509,7 @@ class Experiment():
         individual_effect_train, peer_effect_train, total_effect_train,\
             ate_individual_train, ate_peer_train, ate_total_train\
             = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                       self.train_t0z7, self.train_t0z2, self.train_t0z0)
+                                       self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
         # individual_effect_val, peer_effect_val, total_effect_val,\
         #     ate_individual_val, ate_peer_val, ate_total_val\
