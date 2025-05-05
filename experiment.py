@@ -143,17 +143,17 @@ class Experiment():
         self.labelT = []
 
     def get_peheLoss(self, y1pred, y0pred, y1gt, y0gt):
-        if y1gt.numel() == 0 or y0gt.numel() == 0:
-            return torch.tensor(0.0, device=pred.device)
         pred = y1pred - y0pred
-        gt = y1gt - y0gt  
+        gt = y1gt - y0gt 
+        if y1gt.numel() == 0 or y0gt.numel() == 0:
+            return torch.tensor(0.0, device=pred.device) 
         return torch.sqrt(self.peheLoss(pred, gt))
 
     def get_ateLoss(self, y1pred, y0pred, y1gt, y0gt):
-        if y1gt.numel() == 0 or y0gt.numel() == 0:
-            return torch.tensor(0.0, device=y1pred.device)
         pred = y1pred - y0pred
         gt = y1gt - y0gt
+        if y1gt.numel() == 0 or y0gt.numel() == 0:
+            return torch.tensor(0.0, device=pred.device) 
         return torch.abs(torch.mean(pred) - torch.mean(gt))
 
     def compute_z(self, T, A):
