@@ -120,7 +120,7 @@ try:
 except KeyboardInterrupt:
     # exp.predict()
     pass
-"""Moel Predicting"""
+"""Model Predicting"""
 
 # if args.model == "NetEsimator" and args.save_intermediate:
 #     exp.save_curve()
