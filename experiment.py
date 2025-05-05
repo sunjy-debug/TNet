@@ -262,7 +262,7 @@ class Experiment():
                                        self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
-            print('2_Epoch: {:04d}'.format(epoch + 1),
+            print('t_Epoch: {:04d}'.format(epoch + 1),
                   'tLossTrain:{:.4f}'.format(loss_train.item()),
                   'tLossVal:{:.4f}'.format(pLoss_val.item()),
                   # 'dLossTrain:{:.4f}'.format(dLoss_train.item()),
