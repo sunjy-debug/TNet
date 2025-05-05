@@ -1,3 +1,4 @@
+import os
 import torch
 import pickle as pkl
 import torch.nn as nn
@@ -714,6 +715,7 @@ class Experiment():
                 self.args.expID) + "_alpha_" + str(self.args.alpha) + "_gamma_" + str(
                 self.args.gamma) + "_flipRate_" + str(self.args.flipRate)  + ".pkl"
 
+        os.makedirs(os.path.dirname(file), exist_ok=True)
         with open(file, "wb") as f:
             # print('not save')
             pkl.dump(data, f)
