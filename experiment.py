@@ -142,13 +142,13 @@ class Experiment():
 
     def get_peheLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = (t1 - t0) + (z1 - z0)
+        gt = torch.tensor((t1 - t0) + (z1 - z0), dtype=pred.dtype, device=pred.device)
         # Y = Z + G + po + 0.5 * poN + eps, gt is the difference between Z + G
         return torch.sqrt(self.peheLoss(pred, gt))
 
     def get_ateLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = (t1 - t0) + (z1 - z0)
+        gt = torch.tensor((t1 - t0) + (z1 - z0), dtype=pred.dtype, device=pred.device)
         return torch.abs(torch.mean(pred) - torch.mean(gt))
 
     def compute_z(self, T, A):
