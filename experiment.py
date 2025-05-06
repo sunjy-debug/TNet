@@ -13,9 +13,7 @@ def criterion(out, y):
 class Experiment():
 
     def __init__(self, args, model, trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT,
-                 POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest,
-                 train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2, val_t1z1, val_t1z0, val_t0z0, val_t0z1,
-                 val_t0z2, test_t1z1, test_t1z0, test_t0z0, test_t0z1, test_t0z2):
+                 POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest):
         super(Experiment, self).__init__()
 
         self.args = args
@@ -78,23 +76,23 @@ class Experiment():
 
         self.z_1 = 0.7
         self.z_2 = 0.2
-        self.train_t1z1 = torch.tensor(train_t1z1, dtype=torch.long, device=self.device)
-        self.train_t1z0 = torch.tensor(train_t1z0, dtype=torch.long, device=self.device)
-        self.train_t0z0 = torch.tensor(train_t0z0, dtype=torch.long, device=self.device)
-        self.train_t0z1 = torch.tensor(train_t0z1, dtype=torch.long, device=self.device)
-        self.train_t0z2 = torch.tensor(train_t0z2, dtype=torch.long, device=self.device)
+        # self.train_t1z1 = torch.tensor(train_t1z1, dtype=torch.long, device=self.device)
+        # self.train_t1z0 = torch.tensor(train_t1z0, dtype=torch.long, device=self.device)
+        # self.train_t0z0 = torch.tensor(train_t0z0, dtype=torch.long, device=self.device)
+        # self.train_t0z1 = torch.tensor(train_t0z1, dtype=torch.long, device=self.device)
+        # self.train_t0z2 = torch.tensor(train_t0z2, dtype=torch.long, device=self.device)
 
-        self.val_t1z1 = torch.tensor(val_t1z1, dtype=torch.long, device=self.device)
-        self.val_t1z0 = torch.tensor(val_t1z0, dtype=torch.long, device=self.device)
-        self.val_t0z0 = torch.tensor(val_t0z0, dtype=torch.long, device=self.device)
-        self.val_t0z1 = torch.tensor(val_t0z1, dtype=torch.long, device=self.device)
-        self.val_t0z2 = torch.tensor(val_t0z2, dtype=torch.long, device=self.device)
+        # self.val_t1z1 = torch.tensor(val_t1z1, dtype=torch.long, device=self.device)
+        # self.val_t1z0 = torch.tensor(val_t1z0, dtype=torch.long, device=self.device)
+        # self.val_t0z0 = torch.tensor(val_t0z0, dtype=torch.long, device=self.device)
+        # self.val_t0z1 = torch.tensor(val_t0z1, dtype=torch.long, device=self.device)
+        # self.val_t0z2 = torch.tensor(val_t0z2, dtype=torch.long, device=self.device)
 
-        self.test_t1z1 = torch.tensor(test_t1z1, dtype=torch.long, device=self.device)
-        self.test_t1z0 = torch.tensor(test_t1z0, dtype=torch.long, device=self.device)
-        self.test_t0z0 = torch.tensor(test_t0z0, dtype=torch.long, device=self.device)
-        self.test_t0z1 = torch.tensor(test_t0z1, dtype=torch.long, device=self.device)
-        self.test_t0z2 = torch.tensor(test_t0z2, dtype=torch.long, device=self.device)
+        # self.test_t1z1 = torch.tensor(test_t1z1, dtype=torch.long, device=self.device)
+        # self.test_t1z0 = torch.tensor(test_t1z0, dtype=torch.long, device=self.device)
+        # self.test_t0z0 = torch.tensor(test_t0z0, dtype=torch.long, device=self.device)
+        # self.test_t0z1 = torch.tensor(test_t0z1, dtype=torch.long, device=self.device)
+        # self.test_t0z2 = torch.tensor(test_t0z2, dtype=torch.long, device=self.device)
 
         """PO normalization if any"""
         self.YFTrain, self.YCFTrain = utils.PO_normalize(self.args.normy, self.POTrain, self.POTrain, self.cfPOTrain)
@@ -142,18 +140,15 @@ class Experiment():
         self.predT = []
         self.labelT = []
 
-    def get_peheLoss(self, y1pred, y0pred, y1gt, y0gt):
+    def get_peheLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = y1gt - y0gt
-        if y1gt.numel() == 0 or y0gt.numel() == 0:
-            return torch.tensor(-100, device=pred.device)
+        gt = (t1 - t0) + (z1 - z0)
+        # Y = Z + G + po + 0.5 * poN + eps, gt is the difference between Z + G
         return torch.sqrt(self.peheLoss(pred, gt))
 
-    def get_ateLoss(self, y1pred, y0pred, y1gt, y0gt):
+    def get_ateLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = y1gt - y0gt
-        if y1gt.numel() == 0 or y0gt.numel() == 0:
-            return torch.tensor(-100, device=pred.device) 
+        gt = (t1 - t0) + (z1 - z0)
         return torch.abs(torch.mean(pred) - torch.mean(gt))
 
     def compute_z(self, T, A):
@@ -248,50 +243,47 @@ class Experiment():
             ) * self.args.beta
 
 
-        # individual_effect_train, peer_effect_train, total_effect_train, \
-        #     ate_individual_train, ate_peer_train, ate_total_train \
-        #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-        #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
-        idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_train):
-            individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
-            ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_train, peer_effect_train, total_effect_train, \
-              ate_individual_train, ate_peer_train, ate_total_train \
-              = self.compute_effect_pehe(self.trainA, self.trainX,
-                                        self.train_t1z1, self.train_t1z0,
-                                        self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        individual_effect_train, peer_effect_train, total_effect_train, \
+            ate_individual_train, ate_peer_train, ate_total_train \
+            = self.compute_effect_pehe(self.trainA, self.trainX)
+        # idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_train):
+        #     individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
+        #     ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_train, peer_effect_train, total_effect_train, \
+        #       ate_individual_train, ate_peer_train, ate_total_train \
+        #       = self.compute_effect_pehe(self.trainA, self.trainX,
+        #                                 self.train_t1z1, self.train_t1z0,
+        #                                 self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
-        # individual_effect_val, peer_effect_val, total_effect_val,\
-        #     ate_individual_val, ate_peer_val, ate_total_val\
-        #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+        individual_effect_val, peer_effect_val, total_effect_val,\
+            ate_individual_val, ate_peer_val, ate_total_val\
+             = self.compute_effect_pehe(self.valA, self.valX)
+        # idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_val):
+        #     individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
+        #     ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_val, peer_effect_val, total_effect_val, \
+        #       ate_individual_val, ate_peer_val, ate_total_val \
+        #       = self.compute_effect_pehe(self.valA, self.valX,
+        #                                 self.val_t1z1, self.val_t1z0,
         #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
-        idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_val):
-            individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
-            ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_val, peer_effect_val, total_effect_val, \
-              ate_individual_val, ate_peer_val, ate_total_val \
-              = self.compute_effect_pehe(self.valA, self.valX,
-                                        self.val_t1z1, self.val_t1z0,
-                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
         
-        # individual_effect_te, peer_effect_te, total_effect_te, \
-        #     ate_individual_te, ate_peer_te, ate_total_te \
-        #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-        #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
-        idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_test):
-            individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
-            ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_te, peer_effect_te, total_effect_te, \
-              ate_individual_te, ate_peer_te, ate_total_te \
-              = self.compute_effect_pehe(self.testA, self.testX,
-                                        self.test_t1z1, self.test_t1z0,
-                                        self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        individual_effect_te, peer_effect_te, total_effect_te, \
+            ate_individual_te, ate_peer_te, ate_total_te \
+            = self.compute_effect_pehe(self.testA, self.testX)
+        # idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_test):
+        #     individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
+        #     ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_te, peer_effect_te, total_effect_te, \
+        #       ate_individual_te, ate_peer_te, ate_total_te \
+        #       = self.compute_effect_pehe(self.testA, self.testX,
+        #                                 self.test_t1z1, self.test_t1z0,
+        #                                 self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             idxs_train = [
@@ -496,7 +488,7 @@ class Experiment():
 
         return loss_val, pLossV, dLossV, d_zLossV
 
-    def compute_effect_pehe(self, A, X, gt_t1z1, gt_t1z0, gt_t0z7, gt_t0z2, gt_t0z0):
+    def compute_effect_pehe(self, A, X):
         num = X.shape[0]
         z_1s = torch.ones(num, device=self.device, dtype=torch.long)
         z_0s = torch.zeros(num, device=self.device, dtype=torch.long)
@@ -524,13 +516,13 @@ class Experiment():
         pred_outcome_t0z1 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z1)
         pred_outcome_t0z2 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z2)
 
-        individual_effect = self.get_peheLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z7, gt_t0z2)
-        total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
+        individual_effect = self.get_peheLoss(pred_outcome_t1z0, pred_outcome_t0z0, t1=1, t0=0, z1=0, z0=0)
+        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=1, z0=2)
+        total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=1, z0=0)
 
-        ate_individual = self.get_ateLoss(pred_outcome_t1z0, pred_outcome_t0z0, gt_t1z0, gt_t0z0)
-        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, gt_t0z7, gt_t0z2)
-        ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, gt_t1z1, gt_t0z0)
+        ate_individual = self.get_ateLoss(pred_outcome_t1z0, pred_outcome_t0z0, t1=1, t0=0, z1=0, z0=0)
+        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=1, z0=2)
+        ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=1, z0=0)
 
         return individual_effect, peer_effect, total_effect, ate_individual, ate_peer, ate_total
 
@@ -558,50 +550,47 @@ class Experiment():
             # self.lossCFVal.append(cfloss_val.cpu().detach().numpy())
 
 
-        # individual_effect_train, peer_effect_train, total_effect_train, \
-        #     ate_individual_train, ate_peer_train, ate_total_train \
-        #     = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-        #                                self.train_t0z1, self.train_t0z2, self.train_t0z0)
-        idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_train):
-            individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
-            ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_train, peer_effect_train, total_effect_train, \
-              ate_individual_train, ate_peer_train, ate_total_train \
-              = self.compute_effect_pehe(self.trainA, self.trainX,
-                                        self.train_t1z1, self.train_t1z0,
-                                        self.train_t0z1, self.train_t0z2, self.train_t0z0)
+        individual_effect_train, peer_effect_train, total_effect_train, \
+            ate_individual_train, ate_peer_train, ate_total_train \
+            = self.compute_effect_pehe(self.trainA, self.trainX)
+        # idxs_train = [self.train_t1z1, self.train_t1z0, self.train_t0z1, self.train_t0z2, self.train_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_train):
+        #     individual_effect_train = peer_effect_train = total_effect_train = torch.tensor(0.0, device=self.device)
+        #     ate_individual_train = ate_peer_train = ate_total_train = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_train, peer_effect_train, total_effect_train, \
+        #       ate_individual_train, ate_peer_train, ate_total_train \
+        #       = self.compute_effect_pehe(self.trainA, self.trainX,
+        #                                 self.train_t1z1, self.train_t1z0,
+        #                                 self.train_t0z1, self.train_t0z2, self.train_t0z0)
 
-        # individual_effect_val, peer_effect_val, total_effect_val,\
-        #     ate_individual_val, ate_peer_val, ate_total_val\
-        #      = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
+        individual_effect_val, peer_effect_val, total_effect_val,\
+            ate_individual_val, ate_peer_val, ate_total_val\
+             = self.compute_effect_pehe(self.valA, self.valX)
+        # idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_val):
+        #     individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
+        #     ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_val, peer_effect_val, total_effect_val, \
+        #       ate_individual_val, ate_peer_val, ate_total_val \
+        #       = self.compute_effect_pehe(self.valA, self.valX,
+        #                                 self.val_t1z1, self.val_t1z0,
         #                                 self.val_t0z1, self.val_t0z2, self.val_t0z0)
-        idxs_val = [self.val_t1z1, self.val_t1z0, self.val_t0z1, self.val_t0z2, self.val_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_val):
-            individual_effect_val = peer_effect_val = total_effect_val = torch.tensor(0.0, device=self.device)
-            ate_individual_val = ate_peer_val = ate_total_val = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_val, peer_effect_val, total_effect_val, \
-              ate_individual_val, ate_peer_val, ate_total_val \
-              = self.compute_effect_pehe(self.valA, self.valX,
-                                        self.val_t1z1, self.val_t1z0,
-                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
         
-        # individual_effect_te, peer_effect_te, total_effect_te, \
-        #     ate_individual_te, ate_peer_te, ate_total_te \
-        #     = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-        #                                self.test_t0z1, self.test_t0z2, self.test_t0z0)
-        idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
-        if any(idx.numel() == 0 for idx in idxs_test):
-            individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
-            ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
-        else:
-            individual_effect_te, peer_effect_te, total_effect_te, \
-              ate_individual_te, ate_peer_te, ate_total_te \
-              = self.compute_effect_pehe(self.testA, self.testX,
-                                        self.test_t1z1, self.test_t1z0,
-                                        self.test_t0z1, self.test_t0z2, self.test_t0z0)
+        individual_effect_te, peer_effect_te, total_effect_te, \
+            ate_individual_te, ate_peer_te, ate_total_te \
+            = self.compute_effect_pehe(self.testA, self.testX)
+        # idxs_test = [self.test_t1z1, self.test_t1z0, self.test_t0z1, self.test_t0z2, self.test_t0z0]
+        # if any(idx.numel() == 0 for idx in idxs_test):
+        #     individual_effect_te = peer_effect_te = total_effect_te = torch.tensor(0.0, device=self.device)
+        #     ate_individual_te = ate_peer_te = ate_total_te = torch.tensor(0.0, device=self.device)
+        # else:
+        #     individual_effect_te, peer_effect_te, total_effect_te, \
+        #       ate_individual_te, ate_peer_te, ate_total_te \
+        #       = self.compute_effect_pehe(self.testA, self.testX,
+        #                                 self.test_t1z1, self.test_t1z0,
+        #                                 self.test_t0z1, self.test_t0z2, self.test_t0z0)
 
         if self.args.printPred:
             idxs_train = [
@@ -720,16 +709,13 @@ class Experiment():
 
         individual_effect_train, peer_effect_train, total_effect_train, \
                 ate_individual_train, ate_peer_train, ate_total_train \
-                = self.compute_effect_pehe(self.trainA, self.trainX, self.train_t1z1, self.train_t1z0,
-                                           self.train_t0z1, self.train_t0z2, self.train_t0z0)
+                = self.compute_effect_pehe(self.trainA, self.trainX)
         individual_effect_val, peer_effect_val, total_effect_val, \
             ate_individual_val, ate_peer_val, ate_total_val \
-            = self.compute_effect_pehe(self.valA, self.valX, self.val_t1z1, self.val_t1z0,
-                                        self.val_t0z1, self.val_t0z2, self.val_t0z0)
+            = self.compute_effect_pehe(self.valA, self.valX)
         individual_effect_test, peer_effect_test, total_effect_test, \
             ate_individual_test, ate_peer_test, ate_total_test \
-            = self.compute_effect_pehe(self.testA, self.testX, self.test_t1z1, self.test_t1z0,
-                                       self.test_t0z1, self.test_t0z2, self.test_t0z0)
+            = self.compute_effect_pehe(self.testA, self.testX)
 
         print(
               # 'F_train:{:.4f}'.format(factualLossTrain.item()),

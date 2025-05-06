@@ -126,7 +126,7 @@ def make_split(A, X, Z, G, Y, idxs, cuda):
         T = iZ.copy()
         cfT = 1 - T
         PO = iY
-        cfPO = iY # modify
+        cfPO = PO - 2 * T + 1 # Z = 1, PO - cfPO = 1; Z = 0, cfPO - PO = 1
         return (
             to_tensor(iA, cuda),
             to_tensor(iX, cuda),
@@ -136,23 +136,23 @@ def make_split(A, X, Z, G, Y, idxs, cuda):
             to_tensor(cfPO, cuda),
         )
 
-def split_tz(T, G, PO):
-        if isinstance(T, torch.Tensor):
-            T = T.detach().cpu().numpy()
-        else:
-            T = np.array(T)
-        if isinstance(G, torch.Tensor):
-            G = G.detach().cpu().numpy()
-        else:
-            G = np.array(G)
+# def split_tz(T, G, PO):
+#         if isinstance(T, torch.Tensor):
+#             T = T.detach().cpu().numpy()
+#         else:
+#             T = np.array(T)
+#         if isinstance(G, torch.Tensor):
+#             G = G.detach().cpu().numpy()
+#         else:
+#             G = np.array(G)
         
-        idx_t1z1 = np.where((T == 1) & (G == 1))[0]
-        idx_t1z0 = np.where((T == 1) & (G == 0))[0]
-        idx_t0z0 = np.where((T == 0) & (G == 0))[0]
-        idx_t0z1 = np.where((T == 0) & (G == 1))[0]
-        idx_t0z2 = np.where((T == 0) & (G == 2))[0]
+#         idx_t1z1 = np.where((T == 1) & (G == 1))[0]
+#         idx_t1z0 = np.where((T == 1) & (G == 0))[0]
+#         idx_t0z0 = np.where((T == 0) & (G == 0))[0]
+#         idx_t0z1 = np.where((T == 0) & (G == 1))[0]
+#         idx_t0z2 = np.where((T == 0) & (G == 2))[0]
         
-        return(PO[idx_t1z1], PO[idx_t1z0], PO[idx_t0z0], PO[idx_t0z1], PO[idx_t0z2])
+#         return(PO[idx_t1z1], PO[idx_t1z0], PO[idx_t0z0], PO[idx_t0z1], PO[idx_t0z2])
 
 def load_data(args):
     print ("================================Dataset================================")
@@ -192,9 +192,9 @@ def load_data(args):
         valG   = discretize(valG)
         testG  = discretize(testG)
 
-        (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG, POTrain)
-        (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG, POVal)
-        (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG, POTest)
+        # (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG, POTrain)
+        # (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG, POVal)
+        # (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG, POTest)
 
 
     # with open(file,"rb") as f:
@@ -224,7 +224,7 @@ def load_data(args):
     # test_t0z7=dataTest["test_t0z7"]
     # test_t0z2=dataTest["test_t0z2"]
 
-    return trainA, trainX, trainT,cfTrainT,POTrain,cfPOTrain,valA, valX, valT,cfValT, POVal,cfPOVal,testA, testX, testT,cfTestT,POTest,cfPOTest,train_t1z1,train_t1z0,train_t0z0,train_t0z1,train_t0z2,val_t1z1,val_t1z0,val_t0z0,val_t0z1,val_t0z2,test_t1z1,test_t1z0,test_t0z0,test_t0z1,test_t0z2
+    return trainA, trainX, trainT,cfTrainT,POTrain,cfPOTrain,valA, valX, valT,cfValT, POVal,cfPOVal,testA, testX, testT,cfTestT,POTest,cfPOTest
 
 def load_data_no_flip(args):
     print("================================Dataset================================")
@@ -263,9 +263,9 @@ def load_data_no_flip(args):
         valG   = discretize(valG)
         testG  = discretize(testG)
 
-        (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
-        (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
-        (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG)
+        # (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
+        # (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
+        # (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG)
 
     # with open(file, "rb") as f:
     #     data = pkl.load(f)
@@ -293,8 +293,7 @@ def load_data_no_flip(args):
     # test_t0z7 = dataTest["test_t0z7"]
     # test_t0z2 = dataTest["test_t0z2"]
 
-    return trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest, train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2, val_t1z1, val_t1z0, val_t0z0, val_t0z1, val_t0z2, test_t1z1, test_t1z0, test_t0z0, test_t0z1, test_t0z2
-
+    return trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest
 
 def PO_normalize(normy,base,PO,cfPO):
     """Normalize PO"""
