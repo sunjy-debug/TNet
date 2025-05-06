@@ -82,10 +82,8 @@ args.cuda = args.cuda and torch.cuda.is_available()
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 
-trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, testA, testX, testT, cfTestT, POTest, cfPOTest, \
-    train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2, val_t1z1, val_t1z0, val_t0z0, val_t0z1, val_t0z2,\
-    test_t1z1, test_t1z0, test_t0z0, test_t0z1, test_t0z2 = utils.load_data(
-    args)
+trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT, POVal, cfPOVal, \
+     testA, testX, testT, cfTestT, POTest, cfPOTest = utils.load_data(args)
 
 args.beta = args.beta * (trainX.shape[0] ** (-0.5))
 print(args.beta)
