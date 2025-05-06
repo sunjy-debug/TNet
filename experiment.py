@@ -517,12 +517,12 @@ class Experiment():
         pred_outcome_t0z2 = utils.PO_normalize_recover(self.args.normy, self.POTrain, pred_outcome_t0z2)
 
         individual_effect = self.get_peheLoss(pred_outcome_t1z0, pred_outcome_t0z0, t1=1, t0=0, z1=0, z0=0)
-        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=1, z0=2)
-        total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=1, z0=0)
+        peer_effect = self.get_peheLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=self.z_1, z0=self.z_2)
+        total_effect = self.get_peheLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=self.z_1, z0=0)
 
         ate_individual = self.get_ateLoss(pred_outcome_t1z0, pred_outcome_t0z0, t1=1, t0=0, z1=0, z0=0)
-        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=1, z0=2)
-        ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=1, z0=0)
+        ate_peer = self.get_ateLoss(pred_outcome_t0z1, pred_outcome_t0z2, t1=0, t0=0, z1=self.z_1, z0=self.z_2)
+        ate_total = self.get_ateLoss(pred_outcome_t1z1, pred_outcome_t0z0, t1=1, t0=0, z1=self.z_1, z0=0)
 
         return individual_effect, peer_effect, total_effect, ate_individual, ate_peer, ate_total
 

@@ -249,19 +249,19 @@ def load_data_no_flip(args):
         (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, Y, G, val_idx, cuda)
         (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, Y, G, test_idx, cuda)
 
-        trainG = G[train_idx]
-        valG   = G[val_idx]
-        testG  = G[test_idx]
+        # trainG = G[train_idx]
+        # valG   = G[val_idx]
+        # testG  = G[test_idx]
 
-        z1, z2 = 0.7, 0.2
-        def discretize(G):
-            G = np.zeros_like(G)
-            G[(G >= z2) & (G < z1)] = 1
-            G[G >= z1] = 2
-            return G
-        trainG = discretize(trainG)
-        valG   = discretize(valG)
-        testG  = discretize(testG)
+        # z1, z2 = 0.7, 0.2
+        # def discretize(G):
+        #     G = np.zeros_like(G)
+        #     G[(G >= z2) & (G < z1)] = 1
+        #     G[G >= z1] = 2
+        #     return G
+        # trainG = discretize(trainG)
+        # valG   = discretize(valG)
+        # testG  = discretize(testG)
 
         # (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
         # (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
