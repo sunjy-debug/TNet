@@ -126,7 +126,7 @@ def make_split(A, X, Z, G, Y, idxs, cuda):
         T = iZ.copy()
         cfT = 1 - T
         PO = iY
-        cfPO = iY
+        cfPO = iY # modify
         return (
             to_tensor(iA, cuda),
             to_tensor(iX, cuda),
@@ -135,7 +135,8 @@ def make_split(A, X, Z, G, Y, idxs, cuda):
             to_tensor(PO, cuda),
             to_tensor(cfPO, cuda),
         )
-def split_tz(T, G):
+
+def split_tz(T, G, PO):
         if isinstance(T, torch.Tensor):
             T = T.detach().cpu().numpy()
         else:
@@ -144,13 +145,14 @@ def split_tz(T, G):
             G = G.detach().cpu().numpy()
         else:
             G = np.array(G)
-        return (
-            np.where((T == 1) & (G == 1))[0],
-            np.where((T == 1) & (G == 0))[0],
-            np.where((T == 0) & (G == 0))[0],
-            np.where((T == 0) & (G == 1))[0],
-            np.where((T == 0) & (G == 2))[0],
-        )
+        
+        idx_t1z1 = np.where((T == 1) & (G == 1))[0]
+        idx_t1z0 = np.where((T == 1) & (G == 0))[0]
+        idx_t0z0 = np.where((T == 0) & (G == 0))[0]
+        idx_t0z1 = np.where((T == 0) & (G == 1))[0]
+        idx_t0z2 = np.where((T == 0) & (G == 2))[0]
+        
+        return(PO[idx_t1z1], PO[idx_t1z0], PO[idx_t0z0], PO[idx_t0z1], PO[idx_t0z2])
 
 def load_data(args):
     print ("================================Dataset================================")
@@ -183,16 +185,16 @@ def load_data(args):
         z1, z2 = 0.7, 0.2
         def discretize(G):
             G = np.zeros_like(G)
-            G[G >= z1] = z1
-            G[(G >= z2) & (G < z1)] = z2
+            G[(G >= z2) & (G < z1)] = 1
+            G[G >= z1] = 2
             return G
         trainG = discretize(trainG)
         valG   = discretize(valG)
         testG  = discretize(testG)
 
-        (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG)
-        (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG)
-        (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG)
+        (train_t1z1, train_t1z0, train_t0z0, train_t0z1, train_t0z2) = split_tz(trainT, trainG, POTrain)
+        (val_t1z1,   val_t1z0,   val_t0z0,   val_t0z1,   val_t0z2  ) = split_tz(valT,   valG, POVal)
+        (test_t1z1,  test_t1z0,  test_t0z0,  test_t0z1,  test_t0z2 ) = split_tz(testT,  testG, POTest)
 
 
     # with open(file,"rb") as f:
@@ -254,8 +256,8 @@ def load_data_no_flip(args):
         z1, z2 = 0.7, 0.2
         def discretize(G):
             G = np.zeros_like(G)
-            G[G >= z1] = z1
-            G[(G >= z2) & (G < z1)] = z2
+            G[(G >= z2) & (G < z1)] = 1
+            G[G >= z1] = 2
             return G
         trainG = discretize(trainG)
         valG   = discretize(valG)
