@@ -6,11 +6,11 @@ import utils as utils
 import numpy as np
 from modules import GCN, NN, Predictor,Discriminator
 
-class NetEsimator(nn.Module):
+class NetEstimator(nn.Module):
 
     def __init__(self,Xshape,hidden,dropout):
 
-        super(NetEsimator, self).__init__()
+        super(NetEstimator, self).__init__()
         self.encoder = GCN(nfeat=Xshape, nclass=hidden, dropout=dropout)
         self.predictor = Predictor(input_size=hidden + 2, hidden_size1=hidden, hidden_size2=hidden,output_size=1)
         self.discriminator = Discriminator(input_size=hidden,hidden_size1=hidden,hidden_size2=hidden,output_size=1)
