@@ -114,10 +114,11 @@ class TargetedModel_DoubleBSpline(nn.Module):
         embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), 1)
 
         Q_hat = torch.unsqueeze(T, dim=1) * self.Q1(embed_avgT) + (1-torch.unsqueeze(T, dim=1)) * self.Q0(embed_avgT)
+        Q_hat = torch.squeeze(Q_hat, dim=1)
 
         epsilon = self.tr_reg(T, neighborAverageT)  # epsilon(T,Z)
-        # epsilon = epsilon.squeeze(1)
+        epsilon = torch.squeeze(epsilon, dim=1)
 
 
-        return torch.squeeze(Q_hat, dim=1) + torch.unsqueeze(epsilon, dim=1) /(g_Z_hat * g_T_hat + 1e-6)
+        return Q_hat + epsilon /(g_Z_hat * g_T_hat + 1e-6)
 
