@@ -352,7 +352,7 @@ class Experiment():
             pLoss = self.loss(pred_outcomeTrain.reshape(-1), Y)
             num = pred_treatmentTrain.shape[0]
             target05 = [0.5 for _ in range(num)]
-            dLoss = self.loss(pred_treatmentTrain.reshape(-1), self.Tensor(target05))
+            dLoss = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
             num = pred_zTrain.shape[0]
             target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
             d_zLoss = self.d_zLoss(pred_zTrain.reshape(-1), target)
@@ -407,7 +407,7 @@ class Experiment():
             pLossV = self.loss(pred_outcome.reshape(-1), Y)
             num = pred_treatment.shape[0]
             target05 = [0.5 for _ in range(num)]
-            dLossV = self.loss(pred_treatment.reshape(-1), self.Tensor(target05))
+            dLossV = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
             num = pred_z.shape[0]
             target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
             d_zLossV = self.d_zLoss(pred_z.reshape(-1), target)
