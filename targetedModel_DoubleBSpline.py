@@ -99,7 +99,9 @@ class TargetedModel_DoubleBSpline(nn.Module):
         embeddings = self.encoder(X, A)  # X_i,X_N
         embeddings = self.X_XN(torch.cat((embeddings,X), dim=1))
 
-        g_T_hat = torch.squeeze(self.g_T(embeddings), dim=1)  # X_i,X_N -> T_i
+        g_T_hat = self.g_T(embeddings)
+        if g_T_hat.dim() > 1:
+            g_T_hat = torch.squeeze(g_T_hat, dim=1)  # X_i,X_N -> T_i
 
         if Z is None:
             neighbors = torch.sum(A, 1)
@@ -108,12 +110,15 @@ class TargetedModel_DoubleBSpline(nn.Module):
             neighborAverageT = Z
 
 
-        g_Z_hat = torch.squeeze(self.g_Z(embeddings, neighborAverageT), dim=1)  # X_i,X_N -> Z
-        
+        g_Z_hat = self.g_Z(embeddings, neighborAverageT)
+        if g_Z_hat.dim() > 1:
+            g_Z_hat = torch.squeeze(g_Z_hat, dim=1)  # X_i,X_N -> Z
+
         embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), 1)
 
         Q_hat = torch.unsqueeze(T, dim=1) * self.Q1(embed_avgT) + (1-torch.unsqueeze(T, dim=1)) * self.Q0(embed_avgT)
-        Q_hat = torch.squeeze(Q_hat, dim=1)
+        if Q_hat.dim() > 1:
+            Q_hat = torch.squeeze(Q_hat, dim=1)
 
         epsilon = self.tr_reg(T, neighborAverageT)  # epsilon(T,Z)
 
