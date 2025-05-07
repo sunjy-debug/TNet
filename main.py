@@ -17,7 +17,7 @@ Thank them for their code!
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--cuda', type=int, default=7, help='Use CUDA training.')
+parser.add_argument('--cuda', type=int, default=-1, help='Use CUDA training.')
 parser.add_argument('--seed', type=int, default=24, help='Random seed. RIP KOBE')
 parser.add_argument('--dataset', type=str, default='BC')
 parser.add_argument('--flipRate', type=float, default=1)

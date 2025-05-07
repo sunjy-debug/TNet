@@ -10,6 +10,7 @@ import numpy as np
 def criterion(out, y):
     return ((out - y) ** 2).mean()
 
+
 class Experiment():
 
     def __init__(self, args, model, trainA, trainX, trainT, cfTrainT, POTrain, cfPOTrain, valA, valX, valT, cfValT,
@@ -44,35 +45,34 @@ class Experiment():
             self.optimizer2step = optim.Adam(self.model.parameters(), lr=self.args.lr_2step, weight_decay=self.args.weight_decay)
         else:
             self.optimizerB = optim.Adam(self.model.parameters(), lr=self.args.lr, weight_decay=self.args.weight_decay)
-        if self.args.cuda:
-            self.model = self.model.cuda()
         print("================================Model================================")
         print(self.model)
 
         # self.Tensor = torch.cuda.FloatTensor if self.args.cuda else torch.FloatTensor
         self.device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
-        self.trainA = trainA
-        self.trainX = trainX
-        self.trainT = trainT
+        self.model = model.to(self.device)
+        self.trainA = trainA.to(self.device)
+        self.trainX = trainX.to(self.device)
+        self.trainT = trainT.to(self.device)
         # print(torch.sum(trainT))
-        self.trainZ = self.compute_z(self.trainT, self.trainA)
-        self.cfTrainT = cfTrainT
-        self.POTrain = POTrain
-        self.cfPOTrain = cfPOTrain
-        self.valA = valA
-        self.valX = valX
-        self.valT = valT
-        self.valZ = self.compute_z(self.valT, self.valA)
-        self.cfValT = cfValT
-        self.POVal = POVal
-        self.cfPOVal = cfPOVal
-        self.testA = testA
-        self.testX = testX
-        self.testT = testT
-        self.testZ = self.compute_z(self.testT, self.testA)
-        self.cfTestT = cfTestT
-        self.POTest = POTest
-        self.cfPOTest = cfPOTest
+        self.trainZ = self.compute_z(self.trainT, self.trainA).to(self.device)
+        self.cfTrainT = cfTrainT.to(self.device)
+        self.POTrain = POTrain.to(self.device)
+        self.cfPOTrain = cfPOTrain.to(self.device)
+        self.valA = valA.to(self.device)
+        self.valX = valX.to(self.device)
+        self.valT = valT.to(self.device)
+        self.valZ = self.compute_z(self.valT, self.valA).to(self.device)
+        self.cfValT = cfValT.to(self.device)
+        self.POVal = POVal.to(self.device)
+        self.cfPOVal = cfPOVal.to(self.device)
+        self.testA = testA.to(self.device)
+        self.testX = testX.to(self.device)
+        self.testT = testT.to(self.device)
+        self.testZ = self.compute_z(self.testT, self.testA).to(self.device)
+        self.cfTestT = cfTestT.to(self.device)
+        self.POTest = POTest.to(self.device)
+        self.cfPOTest = cfPOTest.to(self.device)
 
         self.z_1 = 0.7
         self.z_2 = 0.2
@@ -105,14 +105,14 @@ class Experiment():
         self.bce_loss = nn.BCELoss(reduction='mean')
         self.peheLoss = nn.MSELoss(reduction='mean')
 
-        self.alpha = torch.tensor([self.args.alpha], dtype=torch.long, device=self.device)
-        self.gamma = torch.tensor([self.args.gamma], dtype=torch.long, device=self.device)
-        self.alpha_base = torch.tensor([self.args.alpha_base], dtype=torch.long, device=self.device)
+        self.alpha = torch.tensor(self.args.alpha, dtype=torch.float, device=self.device)
+        self.gamma = torch.tensor(self.args.gamma, dtype=torch.float, device=self.device)
+        self.alpha_base = torch.tensor(self.args.alpha_base, dtype=torch.float, device=self.device)
         if self.args.cuda:
             torch.cuda.manual_seed(self.args.seed)
-            self.loss = self.loss.cuda()
-            self.bce_loss = self.bce_loss.cuda()
-            self.peheLoss = self.peheLoss.cuda()
+            self.loss = self.loss
+            self.bce_loss = self.bce_loss
+            self.peheLoss = self.peheLoss
 
         self.lossTrain = []
         self.lossVal = []
@@ -142,13 +142,13 @@ class Experiment():
 
     def get_peheLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = torch.tensor((t1 - t0) + (z1 - z0), dtype=pred.dtype, device=pred.device)
+        gt = torch.full_like(pred, (t1 - t0) + (z1 - z0))
         # Y = Z + G + po + 0.5 * poN + eps, gt is the difference between Z + G
         return torch.sqrt(self.peheLoss(pred, gt))
 
     def get_ateLoss(self, y1pred, y0pred, t1, t0, z1, z0):
         pred = y1pred - y0pred
-        gt = torch.tensor((t1 - t0) + (z1 - z0), dtype=pred.dtype, device=pred.device)
+        gt = torch.full_like(pred, (t1 - t0) + (z1 - z0))
         return torch.abs(torch.mean(pred) - torch.mean(gt))
 
     def compute_z(self, T, A):
@@ -490,12 +490,12 @@ class Experiment():
 
     def compute_effect_pehe(self, A, X):
         num = X.shape[0]
-        z_1s = torch.ones(num, device=self.device, dtype=torch.long)
-        z_0s = torch.zeros(num, device=self.device, dtype=torch.long)
-        z_01s = torch.full((num,), self.z_1, device=self.device, dtype=torch.long)
-        z_02s = torch.full((num,), self.z_2, device=self.device, dtype=torch.long)
-        t_1s = torch.ones((num,), device=self.device, dtype=torch.long)
-        t_0s = torch.zeros(num, device=self.device, dtype=torch.long)
+        z_1s = torch.ones(num, device=self.device, dtype=torch.float)
+        z_0s = torch.zeros(num, device=self.device, dtype=torch.float)
+        z_01s = torch.full((num,), self.z_1, device=self.device, dtype=torch.float)
+        z_02s = torch.full((num,), self.z_2, device=self.device, dtype=torch.float)
+        t_1s = torch.ones((num,), device=self.device, dtype=torch.float)
+        t_0s = torch.zeros(num, device=self.device, dtype=torch.float)
 
         if self.args.model == 'TargetedModel_DoubleBSpline':
             pred_outcome_t1z1 = self.model.infer_potential_outcome(A, X, t_1s, z_1s)
@@ -652,7 +652,7 @@ class Experiment():
         print("================================Training Start================================")
 
         if self.args.model == "NetEsimator":
-            print("******************NetEsimator******************")
+            print("******************" + str(self.args.model) + "******************")
             for epoch in range(self.args.epochs):
                 self.train_discriminator(epoch)
                 self.train_discriminator_z(epoch)

@@ -9,8 +9,8 @@ from sklearn.preprocessing import StandardScaler
 import torch
 import torch.nn.functional as F
 
-def generate_simulation_data(num, p):
-    np.random.seed(0)
+def generate_simulation_data(num, p, seed):
+    np.random.seed(seed)
     # generate feature Z
     x1 = np.random.normal(0, 1, size=num)
     x2 = np.random.normal(0, 1, size=num)
@@ -168,15 +168,15 @@ def load_data(args):
     if dataset == "Flickr" or dataset == "Flickr_hete" or dataset == "Flickr_hete2":
         file = "./data/Flickr/simulation/"+str(dataset)+"_fliprate_"+str(flipRate)+"_expID_"+str(expID)+".pkl"
     if dataset == "Simulation":
-        A, X, Z, Y, G, _, _ = generate_simulation_data(args.n_nodes, args.edge_prob)
+        A, X, Z, Y, G, _, _ = generate_simulation_data(args.n_nodes, args.edge_prob, args.seed)
         idx = np.arange(args.n_nodes)
         np.random.shuffle(idx)
         n1 = int(0.6 * args.n_nodes)
         n2 = int(0.8 * args.n_nodes)
         train_idx, val_idx, test_idx = idx[:n1], idx[n1:n2], idx[n2:]
-        (trainA, trainX, trainT, cfTrainT,POTrain,cfPOTrain) = make_split(A, X, Z, Y, G, train_idx, cuda)
-        (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, Y, G, val_idx, cuda)
-        (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, Y, G, test_idx, cuda)
+        (trainA, trainX, trainT, cfTrainT,POTrain,cfPOTrain) = make_split(A, X, Z, G, Y, train_idx, cuda)
+        (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, G, Y, val_idx, cuda)
+        (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, G, Y, test_idx, cuda)
 
         trainG = G[train_idx]
         valG   = G[val_idx]
@@ -245,9 +245,9 @@ def load_data_no_flip(args):
         n1 = int(0.6 * args.n_nodes)
         n2 = int(0.8 * args.n_nodes)
         train_idx, val_idx, test_idx = idx[:n1], idx[n1:n2], idx[n2:]
-        (trainA, trainX, trainT, cfTrainT,POTrain,cfPOTrain) = make_split(A, X, Z, Y, G, train_idx, cuda)
-        (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, Y, G, val_idx, cuda)
-        (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, Y, G, test_idx, cuda)
+        (trainA, trainX, trainT, cfTrainT,POTrain,cfPOTrain) = make_split(A, X, Z, G, Y, train_idx, cuda)
+        (valA, valX, valT,cfValT,POVal,cfPOVal) = make_split(A, X, Z, G, Y, val_idx, cuda)
+        (testA, testX, testT,cfTestT,POTest,cfPOTest) = make_split(A, X, Z, G, Y, test_idx, cuda)
 
         # trainG = G[train_idx]
         # valG   = G[val_idx]
@@ -352,8 +352,8 @@ def wasserstein(x,y,p=0.5,lam=10,its=10,sq=False,backpropT=False,cuda=False):
 
     '''compute new distance matrix'''
     Mt = M
-    row = delta*(torch.ones(M[0:1,:].shape).cuda())
-    col = torch.cat([delta*(torch.ones(M[:,0:1].shape)).cuda(),(torch.zeros((1,1))).cuda()],0)
+    row = delta*(torch.ones(M[0:1,:].shape))
+    col = torch.cat([delta*(torch.ones(M[:,0:1].shape)),(torch.zeros((1,1)))],0)
     if cuda:
         row = row.cuda()
         col = col.cuda()
@@ -448,7 +448,7 @@ def NMI(set1,set2,threshold=0.5):
     HC = -((NC[0]/N)*torch.log2(NC[0]/N)+(NC[1]/N)*torch.log2(NC[1]/N))
     HW = -((NW[0]/N)*torch.log2(NW[0]/N)+(NW[1]/N)*torch.log2(NW[1]/N))
     IF = MI(res[0][0],NW[0],NC[0],N)+MI(res[0][1],NW[0],NC[1],N)+MI(res[1][0],NW[1],NC[0],N)+MI(res[1][1],NW[1],NC[1],N)
-    return (IF/torch.sqrt(HC*HW)).cuda()
+    return (IF/torch.sqrt(HC*HW))
 
 def pearsonr(x, y):
     mean_x = torch.mean(x)

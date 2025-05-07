@@ -4,48 +4,7 @@ import pickle as pkl
 import torch.nn as nn
 import utils as utils
 import numpy as np
-from modules import GCN, NN, Predictor, Discriminator, Density_Estimator, Discriminator_simplified
-
-class Truncated_power():
-    def __init__(self, degree, knots):
-        """
-        This class construct the truncated power basis; the data is assumed in [0,1]
-        :param degree: int, the degree of truncated basis
-        :param knots: list, the knots of the spline basis; two end points (0,1) should not be included
-        """
-        self.degree = degree
-        self.knots = knots
-        self.num_of_basis = self.degree + 1 + len(self.knots)
-        self.relu = nn.ReLU(inplace=True)
-
-        if self.degree == 0:
-            print('Degree should not set to be 0!')
-            raise ValueError
-
-        if not isinstance(self.degree, int):
-            print('Degree should be int')
-            raise ValueError
-
-    def forward(self, x):
-        """
-        :param x: torch.tensor, batch_size * 1
-        :return: the value of each basis given x; batch_size * self.num_of_basis
-        """
-        x = x.squeeze()
-        out = torch.zeros(x.shape[0], self.num_of_basis).cuda()
-        for _ in range(self.num_of_basis):
-            if _ <= self.degree:
-                if _ == 0:
-                    out[:, _] = 1.
-                else:
-                    out[:, _] = x**_
-            else:
-                if self.degree == 1:
-                    out[:, _] = (self.relu(x - self.knots[_ - self.degree]))
-                else:
-                    out[:, _] = (self.relu(x - self.knots[_ - self.degree - 1])) ** self.degree
-
-        return out # bs, num_of_basis
+from modules import GCN, NN, Predictor, Discriminator, Density_Estimator, Discriminator_simplified, Truncated_power
 
 
 class TR(nn.Module):
@@ -53,7 +12,7 @@ class TR(nn.Module):
         super(TR, self).__init__()
         self.spb = Truncated_power(degree, knots)
         self.d = self.spb.num_of_basis # num of basis
-        self.weight = torch.nn.Parameter(torch.rand(self.d, device='cuda'), requires_grad=True)
+        self.weight = nn.Parameter(torch.rand(self.d), requires_grad=True)
 
     def forward(self, t):
         out = self.spb.forward(t)
@@ -100,7 +59,7 @@ class TargetedModel_DoubleBSpline(nn.Module):
             list(self.g_T.parameters())+\
             list(self.g_Z.parameters())
 
-    def parameter_trageted(self):
+    def parameter_targeted(self):
         return list(self.tr_reg_t0.parameters()) + list(self.tr_reg_t1.parameters())
 
     def tr_reg(self, T, neighborAverageT):
@@ -118,49 +77,46 @@ class TargetedModel_DoubleBSpline(nn.Module):
         g_T_hat = self.g_T(embeddings)  # X_i,X_N -> T_i
         if Z is None:
             neighbors = torch.sum(A, 1)
-            neighborAverageT = torch.div(torch.matmul(A, T.reshape(-1)), neighbors)  # treated_neighbors / all_neighbors
+            neighborAverageT = torch.squeeze((A @ torch.unsqueeze(T, dim=1)), dim=1) / neighbors  # treated_neighbors / all_neighbors
         else:
             neighborAverageT = Z
 
 
         g_Z_hat = self.g_Z(embeddings, neighborAverageT)  # X_i,X_N -> Z
-        g_Z_hat = g_Z_hat.unsqueeze(1)
+        g_Z_hat = torch.unsqueeze(g_Z_hat, dim=1)
 
 
-        embed_avgT = torch.cat((embeddings, neighborAverageT.reshape(-1, 1)), 1)
+        embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), dim=1)
 
-        Q_hat = T.reshape(-1, 1) * self.Q1(embed_avgT) + (1-T.reshape(-1, 1)) * self.Q0(embed_avgT)
+        Q_hat = torch.unsqueeze(T, dim=1) * self.Q1(embed_avgT) + (1-torch.unsqueeze(T, dim=1)) * self.Q0(embed_avgT)
 
         epsilon = self.tr_reg(T, neighborAverageT)  # epsilon(T,Z)
 
 
-        return g_T_hat, g_Z_hat, Q_hat, epsilon, embeddings, neighborAverageT
+        return g_T_hat, g_Z_hat, Q_hat, torch.unsqueeze(epsilon, dim=1), embeddings, neighborAverageT
 
     def infer_potential_outcome(self, A, X, T, Z=None):
         embeddings = self.encoder(X, A)  # X_i,X_N
         embeddings = self.X_XN(torch.cat((embeddings,X), dim=1))
 
-        g_T_hat = self.g_T(embeddings)  # X_i,X_N -> T_i
-        g_T_hat = g_T_hat.squeeze(1)
+        g_T_hat = torch.squeeze(self.g_T(embeddings), dim=1)  # X_i,X_N -> T_i
 
         if Z is None:
             neighbors = torch.sum(A, 1)
-            neighborAverageT = torch.div(torch.matmul(A, T.reshape(-1)), neighbors)  # treated_neighbors / all_neighbors
+            neighborAverageT = torch.squeeze((A @ torch.unsqueeze(T, dim=1)), dim=1) / neighbors  # treated_neighbors / all_neighbors
         else:
             neighborAverageT = Z
 
 
         g_Z_hat = self.g_Z(embeddings, neighborAverageT)  # X_i,X_N -> Z
 
+        embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), 1)
 
-
-        embed_avgT = torch.cat((embeddings, neighborAverageT.reshape(-1, 1)), 1)
-
-        Q_hat = T.reshape(-1, 1) * self.Q1(embed_avgT) + (1-T.reshape(-1, 1)) * self.Q0(embed_avgT)
+        Q_hat = torch.unsqueeze(T, dim=1) * self.Q1(embed_avgT) + (1-torch.unsqueeze(T, dim=1)) * self.Q0(embed_avgT)
 
         epsilon = self.tr_reg(T, neighborAverageT)  # epsilon(T,Z)
         # epsilon = epsilon.squeeze(1)
 
 
-        return Q_hat.reshape(-1) + (epsilon.reshape(-1) * 1/(g_Z_hat.reshape(-1)*g_T_hat.reshape(-1) + 1e-6))
+        return torch.squeeze(Q_hat, dim=1) + torch.unsqueeze(epsilon, dim=1) /(g_Z_hat * g_T_hat + 1e-6)
 

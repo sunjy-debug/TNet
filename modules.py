@@ -10,7 +10,7 @@ class GCN(nn.Module):
     def __init__(self, nfeat, nclass, dropout):
         super(GCN, self).__init__()
 
-        self.gc1 = GraphConvolution(nfeat, nclass).cuda()
+        self.gc1 = GraphConvolution(nfeat, nclass)
         self.dropout = dropout
 
     def forward(self, x, adj):
@@ -27,9 +27,9 @@ class NN(nn.Module):
     def __init__(self,in_dim,out_dim):
         super(NN,self).__init__()
 
-        self.fc = nn.Linear(in_dim, out_dim, device='cuda')
-        self.act = nn.LeakyReLU(0.2, inplace=True).cuda()
-        self.dropout = nn.Dropout(0.1).cuda()
+        self.fc = nn.Linear(in_dim, out_dim)
+        self.act = nn.LeakyReLU(0.2, inplace=True)
+        self.dropout = nn.Dropout(0.1)
     def forward(self,x):
         x = F.relu(self.fc(x))
         x = self.dropout(x)
@@ -44,11 +44,11 @@ class Predictor(nn.Module):
     def __init__(self,input_size,hidden_size1,hidden_size2,output_size):
         super(Predictor, self).__init__()
 
-        self.predict1 = nn.Linear(input_size,hidden_size1, device='cuda')
-        self.predict2 = nn.Linear(hidden_size1,hidden_size2, device='cuda')
-        self.predict3 = nn.Linear(hidden_size2,output_size, device='cuda')
-        self.act = nn.LeakyReLU(0.2, inplace=True).cuda()
-        self.dropout = nn.Dropout(0.1).cuda()
+        self.predict1 = nn.Linear(input_size,hidden_size1)
+        self.predict2 = nn.Linear(hidden_size1,hidden_size2)
+        self.predict3 = nn.Linear(hidden_size2,output_size)
+        self.act = nn.LeakyReLU(0.2, inplace=True)
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self,x):
         x = self.predict1(x)
@@ -69,11 +69,11 @@ class Discriminator(nn.Module):
     def __init__(self,input_size,hidden_size1,hidden_size2,output_size):
         super(Discriminator,self).__init__()
 
-        self.disc1 = nn.Linear(input_size,hidden_size1, device='cuda')
-        self.disc2 = nn.Linear(hidden_size1,hidden_size2, device='cuda')
-        self.disc3 = nn.Linear(hidden_size2,output_size, device='cuda')
-        self.act = nn.LeakyReLU(0.2, inplace=True).cuda()
-        self.dropout = nn.Dropout(0.1).cuda()
+        self.disc1 = nn.Linear(input_size,hidden_size1)
+        self.disc2 = nn.Linear(hidden_size1,hidden_size2)
+        self.disc3 = nn.Linear(hidden_size2,output_size)
+        self.act = nn.LeakyReLU(0.2, inplace=True)
+        self.dropout = nn.Dropout(0.1)
 
 
     def forward(self,x):
@@ -96,9 +96,9 @@ class Discriminator_simplified(nn.Module):
     def __init__(self,input_size,hidden_size1,output_size):
         super(Discriminator_simplified,self).__init__()
 
-        self.disc1 = nn.Linear(input_size,hidden_size1, device='cuda')
-        self.disc3 = nn.Linear(hidden_size1,output_size, device='cuda')
-        self.act = nn.LeakyReLU(0.2, inplace=True).cuda()
+        self.disc1 = nn.Linear(input_size,hidden_size1)
+        self.disc3 = nn.Linear(hidden_size1,output_size)
+        self.act = nn.LeakyReLU(0.2, inplace=True)
 
     def forward(self,x):
         x = self.disc1(x)
@@ -122,7 +122,7 @@ def comp_grid(y, num_grid):
     L = U - 1
     L += (L < 0).int()
 
-    return L.int().tolist(), U.int().tolist(), inter
+    return L, U, inter
 
 
 class Density_Block(nn.Module):
@@ -138,9 +138,9 @@ class Density_Block(nn.Module):
 
         self.isbias = isbias
 
-        self.weight = nn.Parameter(torch.rand(self.ind, self.outd, device='cuda'), requires_grad=True)
+        self.weight = nn.Parameter(torch.rand(self.ind, self.outd), requires_grad=True)
         if self.isbias:
-            self.bias = nn.Parameter(torch.rand(self.outd, device='cuda'), requires_grad=True)
+            self.bias = nn.Parameter(torch.rand(self.outd), requires_grad=True)
         else:
             self.bias = None
 
@@ -186,43 +186,53 @@ class Density_Estimator(nn.Module):
         self.density_estimator_head._initialize_weights()
 
 
-class Truncated_power():
+class Truncated_power(nn.Module):
     def __init__(self, degree, knots):
         """
         This class construct the truncated power basis; the data is assumed in [0,1]
         :param degree: int, the degree of truncated basis
         :param knots: list, the knots of the spline basis; two end points (0,1) should not be included
         """
+        super().__init__()
         self.degree = degree
         self.knots = knots
         self.num_of_basis = self.degree + 1 + len(self.knots)
-        self.relu = nn.ReLU(inplace=True).cuda()
+        self.relu = nn.ReLU(inplace=True)
 
-        if self.degree == 0:
-            print('Degree should not set to be 0!')
-            raise ValueError
-
-        if not isinstance(self.degree, int):
-            print('Degree should be int')
-            raise ValueError
+        if degree < 1 or not isinstance(degree, int):
+            raise ValueError("degree must be integer >= 1")
 
     def forward(self, x):
         """
         :param x: torch.tensor, batch_size * 1
         :return: the value of each basis given x; batch_size * self.num_of_basis
         """
-        x = x.squeeze()
-        out = torch.zeros(x.shape[0], self.num_of_basis, device='cuda')
-        for _ in range(self.num_of_basis):
-            if _ <= self.degree:
-                if _ == 0:
-                    out[:, _] = 1.
-                else:
-                    out[:, _] = x**_
+        # x = x.squeeze()
+        # device = x.device
+        # out = torch.zeros(x.shape[0], self.num_of_basis, device=device)
+        # for _ in range(self.num_of_basis):
+        #     if _ <= self.degree:
+        #         if _ == 0:
+        #             out[:, _] = 1.
+        #         else:
+        #             out[:, _] = x**_
+        #     else:
+        #         if self.degree == 1:
+        #             out[:, _] = (self.relu(x - self.knots[_ - self.degree]))
+        #         else:
+        #             out[:, _] = (self.relu(x - self.knots[_ - self.degree - 1])) ** self.degree
+        x = x.view(-1)
+        batch = x.size(0)
+        out = x.new_zeros(batch, self.num_of_basis)
+        for d in range(self.degree + 1):
+            out[:, d] = x ** d
+        for j, knot in enumerate(self.knots):
+            idx = self.degree + 1 + j
+            # (x - knot)_+ ^ degree
+            diff = self.relu(x - knot)
+            if self.degree == 1:
+                out[:, idx] = diff
             else:
-                if self.degree == 1:
-                    out[:, _] = (self.relu(x - self.knots[_ - self.degree]))
-                else:
-                    out[:, _] = (self.relu(x - self.knots[_ - self.degree - 1])) ** self.degree
+                out[:, idx] = diff ** self.degree
 
         return out # bs, num_of_basis
