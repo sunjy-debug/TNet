@@ -117,11 +117,12 @@ def comp_grid(y, num_grid):
     # U gives the upper index
     # inter gives the distance to the lower int
 
+    y = y.view(-1)
     U = torch.ceil(y * num_grid)
     inter = 1 - (U - y * num_grid)
-    L = U - 1
-    L += (L < 0).int()
-
+    L = (U - 1).clamp(0)
+    L = L.to(torch.long)
+    U = U.to(torch.long)
     return L, U, inter
 
 
@@ -152,11 +153,11 @@ class Density_Block(nn.Module):
             out += self.bias
         out = self.softmax(out)
 
-        x1 = list(torch.arange(0, x.shape[0]))
+        idx = torch.arange(x.size(0), device=x.device, dtype=torch.long)
         L, U, inter = comp_grid(z, self.num_grid)
 
-        L_out = out[x1, L]
-        U_out = out[x1, U]
+        L_out = out[idx, L]
+        U_out = out[idx, U]
 
         out = L_out + (U_out - L_out) * inter
 

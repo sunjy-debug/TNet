@@ -109,6 +109,7 @@ class TargetedModel_DoubleBSpline(nn.Module):
 
 
         g_Z_hat = self.g_Z(embeddings, neighborAverageT)  # X_i,X_N -> Z
+        g_Z_hat = torch.unsqueeze(g_Z_hat, dim=1)
 
         embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), 1)
 
