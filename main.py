@@ -5,7 +5,6 @@ import utils as utils
 import numpy as np
 from targetedModel_DoubleBSpline import TargetedModel_DoubleBSpline
 from experiment import Experiment
-import matplotlib.pyplot as plt
 
 
 '''
@@ -117,18 +116,6 @@ try:
 except KeyboardInterrupt:
     # exp.predict()
     pass
-
-epochs = range(1, len(exp.lossTrain) + 1)
-
-plt.figure()
-plt.plot(epochs, exp.lossTrain, label='Train Loss')
-plt.plot(epochs, exp.lossVal,   label='Val   Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training & Validation Loss per Epoch')
-plt.legend()
-plt.tight_layout()
-plt.show()
 
 """Model Predicting"""
 
