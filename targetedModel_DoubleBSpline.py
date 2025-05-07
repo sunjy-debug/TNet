@@ -103,22 +103,19 @@ class TargetedModel_DoubleBSpline(nn.Module):
 
         if Z is None:
             neighbors = torch.sum(A, 1)
-            neighborAverageT = torch.squeeze((A @ torch.unsqueeze(T, dim=1)), dim=1) / neighbors  # treated_neighbors / all_neighbors
+            neighborAverageT = torch.squeeze(torch.matmul(A, torch.unsqueeze(T, dim=1)), dim=1) / (neighbors + 1e-6)  # treated_neighbors / all_neighbors
         else:
             neighborAverageT = Z
 
 
-        g_Z_hat = self.g_Z(embeddings, neighborAverageT)  # X_i,X_N -> Z
-        g_Z_hat = torch.unsqueeze(g_Z_hat, dim=1)
-
+        g_Z_hat = torch.squeeze(self.g_Z(embeddings, neighborAverageT), dim=1)  # X_i,X_N -> Z
+        
         embed_avgT = torch.cat((embeddings, torch.unsqueeze(neighborAverageT, dim=1)), 1)
 
         Q_hat = torch.unsqueeze(T, dim=1) * self.Q1(embed_avgT) + (1-torch.unsqueeze(T, dim=1)) * self.Q0(embed_avgT)
         Q_hat = torch.squeeze(Q_hat, dim=1)
 
         epsilon = self.tr_reg(T, neighborAverageT)  # epsilon(T,Z)
-        epsilon = torch.squeeze(epsilon, dim=1)
-
 
         return Q_hat + epsilon /(g_Z_hat * g_T_hat + 1e-6)
 
