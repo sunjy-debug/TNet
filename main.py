@@ -117,16 +117,6 @@ except KeyboardInterrupt:
     # exp.predict()
     pass
 
-import matplotlib.pyplot as plt
-
-plt.plot(exp.lossTrain, label='Train Loss')
-plt.plot(exp.lossVal,   label='Val   Loss')
-plt.title('Loss Curve')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.tight_layout()
-plt.show()
 
 """Model Predicting"""
 
