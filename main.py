@@ -120,7 +120,7 @@ except KeyboardInterrupt:
 
 """Model Predicting"""
 
-# if args.model == "NetEsimator" and args.save_intermediate:
+# if args.model == "NetEstimator" and args.save_intermediate:
 #     exp.save_curve()
 #     exp.save_embedding()
 

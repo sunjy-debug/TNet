@@ -19,7 +19,7 @@ class Experiment():
 
         self.args = args
         self.model = model
-        if self.args.model == "NetEsimator":
+        if self.args.model == "NetEstimator":
             self.optimizerD = optim.Adam([{'params': self.model.discriminator.parameters()}], lr=self.args.lrD,
                                          weight_decay=self.args.weight_decay)
             self.optimizerD_z = optim.Adam([{'params': self.model.discriminator_z.parameters()}], lr=self.args.lrD_z,
@@ -344,7 +344,7 @@ class Experiment():
 
     def train_one_step_encoder_predictor(self, A, X, T, Y):
 
-        if self.args.model == "NetEsimator":
+        if self.args.model == "NetEstimator":
             self.model.zero_grad()
             self.model.train()
             self.optimizerP.zero_grad()
@@ -402,7 +402,7 @@ class Experiment():
     def eval_one_step_encoder_predictor(self, A, X, T, Y):
 
         self.model.eval()
-        if self.args.model == "NetEsimator":
+        if self.args.model == "NetEstimator":
             pred_treatment, pred_z, pred_outcome, _, _ = self.model(A, X, T)
             pLossV = self.loss(pred_outcome.reshape(-1), Y)
             num = pred_treatment.shape[0]
@@ -602,7 +602,7 @@ class Experiment():
     def train(self):
         print("================================Training Start================================")
 
-        if self.args.model == "NetEsimator":
+        if self.args.model == "NetEstimator":
             print("******************" + str(self.args.model) + "******************")
             for epoch in range(self.args.epochs):
                 self.train_discriminator(epoch)
@@ -740,7 +740,7 @@ class Experiment():
             "args": str(self.args),
                 }
 
-        if self.args.model == "NetEsimator":
+        if self.args.model == "NetEstimator":
             print("================================Save prediction...================================")
             file = "./results/" + self.args.dataset + "/perf/" + self.args.dataset + "_prediction_expID_" + str(
                     self.args.expID) + "_alpha_" + str(self.args.alpha) + "_gamma_" + str(
