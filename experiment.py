@@ -48,7 +48,6 @@ class Experiment():
         print("================================Model================================")
         print(self.model)
 
-        # self.Tensor = torch.cuda.FloatTensor if self.args.cuda else torch.FloatTensor
         self.device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
         self.model = model.to(self.device)
         self.trainA = trainA.to(self.device)
