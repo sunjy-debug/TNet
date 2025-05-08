@@ -157,16 +157,16 @@ class Experiment():
         return neighborAverageT
 
     def train_one_step_discriminator(self, A, X, T):
-
         self.model.train()
         self.optimizerD.zero_grad()
-        pred_treatmentTrain, _, _, _, _ = self.model(A, X, T)
-        discLoss = self.bce_loss(pred_treatmentTrain.reshape(-1), T)
+        pred_treatmentTrain,_, _, _,_ = self.model(A,X,T)
+        discLoss = self.bce_loss(pred_treatmentTrain.reshape(-1),T)
         num = pred_treatmentTrain.shape[0]
         target05 = [0.5 for _ in range(num)]
-        discLosshalf = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
+        discLosshalf = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.float, device=self.device))
         discLoss.backward()
         self.optimizerD.step()
+        
 
         return discLoss, discLosshalf
 
@@ -177,7 +177,7 @@ class Experiment():
         discLossWatch = self.bce_loss(pred_treatment.reshape(-1), T)
         num = pred_treatment.shape[0]
         target05 = [0.5 for _ in range(num)]
-        discLosshalf = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
+        discLosshalf = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.float, device=self.device))
 
         return discLossWatch, discLosshalf, pred_treatment, T
 
@@ -299,7 +299,7 @@ class Experiment():
         discLoss_z = self.d_zLoss(pred_zTrain.reshape(-1), labelZ)
         num = pred_zTrain.shape[0]
         target = np.random.uniform(low=0.0, high=1.0, size=num)
-        discLosshalf_z = self.loss(pred_zTrain.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
+        discLosshalf_z = self.loss(pred_zTrain.reshape(-1), torch.tensor(target, dtype=torch.float, device=self.device))
         discLoss_z.backward()
         self.optimizerD_z.step()
 
@@ -312,7 +312,7 @@ class Experiment():
         discLossWatch = self.d_zLoss(pred_z.reshape(-1), labelZ)
         num = pred_z.shape[0]
         target = np.random.uniform(low=0.0, high=1.0, size=num)
-        discLosshalf = self.loss(pred_z.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
+        discLosshalf = self.loss(pred_z.reshape(-1), torch.tensor(target, dtype=torch.float, device=self.device))
 
         return discLossWatch, discLosshalf, pred_z, labelZ
 
@@ -351,7 +351,7 @@ class Experiment():
             pLoss = self.loss(pred_outcomeTrain.reshape(-1), Y)
             num = pred_treatmentTrain.shape[0]
             target05 = [0.5 for _ in range(num)]
-            dLoss = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
+            dLoss = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.float, device=self.device))
             num = pred_zTrain.shape[0]
             target = np.random.uniform(low=0.0, high=1.0, size=num)
             d_zLoss = self.d_zLoss(pred_zTrain.reshape(-1), target)
@@ -387,12 +387,12 @@ class Experiment():
             pLoss = self.loss(pred_outcomeTrain.reshape(-1), Y)
             if self.args.model in set(["TARNet", "TARNet_INTERFERENCE"]):
                 loss_train = pLoss
-                dLoss = torch.tensor([0], dtype=torch.long, device=self.device)
+                dLoss = torch.tensor([0], dtype=torch.float, device=self.device)
             else:
                 rep_t1, rep_t0 = rep[(T > 0).nonzero()], rep[(T < 1).nonzero()]
                 dLoss, _ = utils.wasserstein(rep_t1, rep_t0, cuda=self.args.cuda)
                 loss_train = pLoss + self.alpha_base * dLoss
-            d_zLoss = torch.tensor([-1], dtype=torch.long, device=self.device)
+            d_zLoss = torch.tensor([-1], dtype=torch.float, device=self.device)
             loss_train.backward()
             self.optimizerB.step()
 
@@ -406,7 +406,7 @@ class Experiment():
             pLossV = self.loss(pred_outcome.reshape(-1), Y)
             num = pred_treatment.shape[0]
             target05 = [0.5 for _ in range(num)]
-            dLossV = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
+            dLossV = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.float, device=self.device))
             num = pred_z.shape[0]
             target = np.random.uniform(low=0.0, high=1.0, size=num)
             d_zLossV = self.d_zLoss(pred_z.reshape(-1), target)
@@ -428,13 +428,13 @@ class Experiment():
             pLossV = self.loss(pred_outcome.reshape(-1), Y)
             if self.args.model in set(["TARNet", "TARNet_INTERFERENCE"]):
                 loss_val = pLossV
-                dLossV = torch.tensor([0], dtype=torch.long, device=self.device)
+                dLossV = torch.tensor([0], dtype=torch.float, device=self.device)
             else:
                 rep_t1, rep_t0 = rep[(T > 0).nonzero()], rep[(T < 1).nonzero()]
                 dLossV, _ = utils.wasserstein(rep_t1, rep_t0, cuda=self.args.cuda)
                 loss_val = self.args.alpha_base * dLossV
                 loss_val = pLossV + self.args.alpha_base * dLossV
-            d_zLossV = torch.tensor([-1], dtype=torch.long, device=self.device)
+            d_zLossV = torch.tensor([-1], dtype=torch.float, device=self.device)
 
         return loss_val, pLossV, dLossV, d_zLossV
 
