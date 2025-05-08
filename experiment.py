@@ -299,7 +299,7 @@ class Experiment():
         _, pred_zTrain, _, _, labelZ = self.model(A, X, T)
         discLoss_z = self.d_zLoss(pred_zTrain.reshape(-1), labelZ)
         num = pred_zTrain.shape[0]
-        target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+        target = np.random.uniform(low=0.0, high=1.0, size=num)
         discLosshalf_z = self.loss(pred_zTrain.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
         discLoss_z.backward()
         self.optimizerD_z.step()
@@ -312,7 +312,7 @@ class Experiment():
         _, pred_z, _, _, labelZ = self.model(A, X, T)
         discLossWatch = self.d_zLoss(pred_z.reshape(-1), labelZ)
         num = pred_z.shape[0]
-        target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+        target = np.random.uniform(low=0.0, high=1.0, size=num)
         discLosshalf = self.loss(pred_z.reshape(-1), torch.tensor(target, dtype=torch.long, device=self.device))
 
         return discLossWatch, discLosshalf, pred_z, labelZ
@@ -354,7 +354,7 @@ class Experiment():
             target05 = [0.5 for _ in range(num)]
             dLoss = self.loss(pred_treatmentTrain.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
             num = pred_zTrain.shape[0]
-            target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+            target = np.random.uniform(low=0.0, high=1.0, size=num)
             d_zLoss = self.d_zLoss(pred_zTrain.reshape(-1), target)
             loss_train = pLoss + dLoss * self.alpha + d_zLoss * self.gamma
             loss_train.backward()
@@ -409,7 +409,7 @@ class Experiment():
             target05 = [0.5 for _ in range(num)]
             dLossV = self.loss(pred_treatment.reshape(-1), torch.tensor(target05, dtype=torch.long, device=self.device))
             num = pred_z.shape[0]
-            target = torch.tensor(np.random.uniform(low=0.0, high=1.0, size=num), dtype=torch.long, device=self.device)
+            target = np.random.uniform(low=0.0, high=1.0, size=num)
             d_zLossV = self.d_zLoss(pred_z.reshape(-1), target)
             loss_val = pLossV + dLossV * self.alpha + d_zLossV * self.gamma
 
